@@ -1,5 +1,5 @@
 
-function [Rx,FN,FT,P]=BEM(total_v,total_omega,pitch)
+function [Rx,FN,FT,P]=BEM(total_v,omega,pitch)
 %------------------------------------------------
 % Blade Element Momentum
 %------------------------------------------------
@@ -9,8 +9,8 @@ function [Rx,FN,FT,P]=BEM(total_v,total_omega,pitch)
 %-------------------STATEMENT-------------------%
 % a: axial induction
 % a_prime: tangential induction
-% Phi: inflow angle ¦Õ
-% Alpha: local attack angle ¦Á
+% Phi: inflow angle Â¦Ã•
+% Alpha: local attack angle Â¦Ã
 % Theta: twist angle
 % pitch: blade pitch angle
 % Sigma: solidity
@@ -70,9 +70,6 @@ for i=1:NBS
     a=ax-10*EPS;              %generate error, active iteration
     a_prime=ax_prime-10*EPS;  %generate error, active iteration
     
-    v0 = total_v(i);
-    omega = total_omega(i);
-
     numite=0; % iteration counter
     %iteration, stop when error is smaller than EPS
     while abs(ax-a)>=EPS || abs(ax_prime-a_prime)>=EPS

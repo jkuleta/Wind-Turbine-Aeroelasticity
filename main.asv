@@ -5,8 +5,6 @@ clc
 close all;
 clear all;
 
-global M C K radius_aero twist_aero phi_1flap_aero phi_1edge_aero
-
 %% Load key parameters - AERODYNAMICS
 load 'STATE'
 v0_values=WindSpeeds;    % read wind speed array
@@ -69,6 +67,8 @@ phi_1flap_aero = 0.0622*blade_position_aero.^2 + 1.7254*blade_position_aero.^3 -
 phi_1edge_aero = 0.3627*blade_position_aero.^2 + 2.5337*blade_position_aero.^3 - 3.5772*blade_position_aero.^4 + 2.376*blade_position_aero.^5 - 0.6952*blade_position_aero.^6;
 
 
+global M C K radius_aero twist_aero phi_1flap_aero phi_1edge_aero
+
 %% Coupling with BEM - loop: wind speed from 3m/s to 25m/s
 %set v0(i) = 15 <=> i =14
 i = 14;
@@ -87,25 +87,22 @@ V = V_org;
 omega = omega_org;
 
 for t=0:dt
-    F = compute_aero_force(x, dx, V, omega, pitch, radius_aero, twist_aero, phi_1flap_aero, phi_1edge_aero);
-
+    F = compute_aero_force(x, dx, V, omega, pitch, radius, twist, phi_1flap, phi_1edge);
+    
     % Runge-Kutta solver
-    A_rk = dt/2 * ddx;
-    b_rk = dt/2 * (dx + 0.5 * A_rk);
+    A = dt/2 * ddx;
+    b = dt/2 * (dx + 0.5 * A);
+    B = dt/2 * g(dx + A, x + b, omega, pitch);
+    C = dt/2 * g(dx+B, x+b, omega, pitch);
+    d = dt * (dx + C);
+    D = dt/2 * g(dx + 2*C, x +d, omega, pitch);
 
-    B_rk = dt/2 * g(dx + A_rk, x + b_rk, V, omega, pitch);
-
-    C_rk = dt/2 * g(dx+B_rk, x+b_rk, V, omega, pitch);
-    d_rk = dt * (dx + C_rk);
-    D_rk = dt/2 * g(dx + 2*C_rk, x +d_rk,V, omega, pitch);
-
-    x = x +dt*(dx + 1/3*(A_rk+B_rk+C_rk));
-    dx = dx+ 1/3 *(A_rk+2*B_rk+2*C_rk+D_rk);
-    ddx = g(dx, x, V, omega, pitch);
+    x = x +dt*(dx + 1/3*(A+B+C));
+    dx = dx+ 1/3 *(A+2*B+2*C+D);
+    ddx = g(dx, x, omega, pitch);
 
     % Apply shape functions
     velocity = [dx(1) * phi_1flap_aero; dx(2) * phi_1edge_aero];
-    displacement = [x(1) * phi_1flap_aero; x(2) * phi_1edge_aero];
     
     % Velocity coupling
     V_inplane = velocity(1) * cos(pitch + twist_aero) - velocity(2) * sin(pitch+twist_aero);
@@ -114,5 +111,47 @@ for t=0:dt
     V = V_org - V_outplane;
     omega = omega_org - V_inplane ./ radius_aero;
 
+
+
+
+
+%% plot power curve regarding wind speed
+figure(2)
+plot(v0,P,'b-o','linewidth',1.5);
+xlabel('Wind speed(m/s)');
+ylabel('Power(W)');
+
+
+
+
+%% Functions
+
+function F_modal = compute_aero_force(x, dx, v0, omega, pitch, radius, twist, phi_1flap, phi_1edge)
+
+    % Convert modal deflection to blade deflection shape
+    % (You could use phi*modal amplitude here, shape already given)
+
+    [Rx,FN,FT,~] = BEM(v0, omega, pitch);  % Call your existing BEM
+
+    % Rotate loads to flap and edge directions
+    FF = FN .* cos(pitch + twist) + FT .* sin(pitch + twist);
+    FE = FN .* -sin(pitch + twist) + FT .* cos(pitch + twist);
+
+    % Project to modal coordinates
+    F_flap = trapz(radius, FF .* phi_flap);
+    F_edge = trapz(radius, FE .* phi_edge);
+
+    F_modal = [F_flap; F_edge];
 end
 
+
+function ddx = g(dx, x, v0, omega, pitch)
+    % Mass, damping, stiffness must be accessible globally or passed
+    global M C K radius_aero twist_aero phi_1flap_aero phi_1edge_aero
+
+    % Compute force based on current state
+    F = compute_aero_force(x, dx, v0, omega, pitch, radius_aero, twist_aero, phi_1flap_aero, phi_1edge_aero);
+
+    % Return acceleration
+    ddx = M \ (F - C*dx - K*x);
+end
