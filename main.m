@@ -67,9 +67,9 @@ phi_1edge_aero = 0.3627*blade_position_aero.^2 + 2.5337*blade_position_aero.^3 -
                  0.6952*blade_position_aero.^6;
 
 %% Simulation setup
-i = 14;
-dt = 0.01;
-tf = 5;
+i = 10;
+dt = 0.1;
+tf = 35;
 t = 0:dt:tf;
 
 % defitnition of arrays
@@ -151,15 +151,30 @@ figure;
 % Use default MATLAB color order
 co = get(gca, 'ColorOrder');
 
-% Flapwise and Edgewise displacement and velocity on the same plot
-plot(t, x(1,:), 'LineWidth', 2, 'Color', co(1,:)); hold on;                % Flapwise displacement
-plot(t, dx(1,:), '--', 'LineWidth', 2, 'Color', co(1,:));                  % Flapwise velocity (dashed, same color)
-plot(t, x(2,:), 'LineWidth', 2, 'Color', co(2,:));                         % Edgewise displacement
-plot(t, dx(2,:), '--', 'LineWidth', 2, 'Color', co(2,:));                  % Edgewise velocity (dashed, same color)
+% Compute average displacement in each direction
+avg_flap = mean(x(1,:));
+avg_edge = mean(x(2,:));
+
+% Flapwise displacement and velocity
+subplot(2,1,1);
+plot(t, x(1,:), 'LineWidth', 2, 'Color', co(1,:)); hold on;
+plot(t, dx(1,:), '--', 'LineWidth', 2, 'Color', co(1,:));
+plot(t, avg_flap*ones(size(t)), ':', 'LineWidth', 1.5, 'Color', 'k'); % average as dotted line
 hold off;
 xlabel('Time [s]');
-ylabel('Displacement / Velocity');
-legend('Flapwise Displacement', 'Flapwise Velocity', ...
-    'Edgewise Displacement', 'Edgewise Velocity');
-title('Flapwise and Edgewise Displacement and Velocity vs Time');
+ylabel('Flapwise');
+legend('Displacement', 'Velocity');
+title('Flapwise Displacement and Velocity vs Time');
+grid on;
+
+% Edgewise displacement and velocity
+subplot(2,1,2);
+plot(t, x(2,:), 'LineWidth', 2, 'Color', co(2,:)); hold on;
+plot(t, dx(2,:), '--', 'LineWidth', 2, 'Color', co(2,:));
+plot(t, avg_edge*ones(size(t)), ':', 'LineWidth', 1.5, 'Color', 'k'); % average as dotted line
+hold off;
+xlabel('Time [s]');
+ylabel('Edgewise');
+legend('Displacement', 'Velocity');
+title('Edgewise Displacement and Velocity vs Time');
 grid on;
