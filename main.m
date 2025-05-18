@@ -22,7 +22,7 @@ edge_stiffness_distribution = structural_data.data(:, 7);
 R = radius(end);
 
 %% Damping
-damping_flapwise = 0.477465e-2;
+damping_flapwise = 0.477465;
 damping_edgewise = damping_flapwise;
 
 %% Shape functions
@@ -69,7 +69,7 @@ phi_1edge_aero = 0.3627*blade_position_aero.^2 + 2.5337*blade_position_aero.^3 -
 %% Simulation setup
 i = 10;
 dt = 0.1;
-tf = 35;
+tf = 5;
 t = 0:dt:tf;
 
 % defitnition of arrays
