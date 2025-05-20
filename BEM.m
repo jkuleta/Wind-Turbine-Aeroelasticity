@@ -9,8 +9,8 @@ function [Rx,FN,FT,P]=BEM(total_v,total_omega,pitch)
 %-------------------STATEMENT-------------------%
 % a: axial induction
 % a_prime: tangential induction
-% Phi: inflow angle ¦Õ
-% Alpha: local attack angle ¦Á
+% Phi: inflow angle ï¿½ï¿½
+% Alpha: local attack angle ï¿½ï¿½
 % Theta: twist angle
 % pitch: blade pitch angle
 % Sigma: solidity
@@ -41,12 +41,12 @@ EPS=0.00001;    %iterative precision tolerance
 a=0;a_prime=0;
 
 %import Blade section file
-BS=importdata('Blade\Blade section\Blade section.dat').data;
+BS=importdata('Blade/Blade section/Blade section.dat').data;
 
 %import Aero data files
-Readfiles = dir(fullfile('Blade\Aero data\','*.dat'));
+Readfiles = dir(fullfile('Blade/Aero data/','*.dat'));
 for i=1:length(Readfiles)
-    AD{i}=importdata(strcat('Blade\Aero data\',Readfiles(i).name));
+    AD{i}=importdata(strcat('Blade/Aero data/',Readfiles(i).name));
 end
 
 NBS=length(BS);    %Number of blade sections
