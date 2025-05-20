@@ -37,7 +37,7 @@ for j = 1:length(t)-1
     end
     
     % Runge-Kutta integration
-    [x(:,j+1), dx(:,j+1), ddx(:,j+1)] = runge_kutta_step(x(:,j), dx(:,j), ddx(:,j), dt, V, omega, pitch, StructuralParameters, AeroParameters);
+    [x(:,j+1), dx(:,j+1), ddx(:,j+1)] = runge_kutta_step(x(:,j), dx(:,j), ddx(:,j), dt, V, omega, pitch, StructuralParameters.M, StructuralParameters.C, StructuralParameters.K, AeroParameters);
 
     % Velocity coupling
     velocity = [dx(1,j) * AeroParameters.phi_1flap_aero; dx(2,j) * AeroParameters.phi_1edge_aero];
