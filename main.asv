@@ -7,9 +7,9 @@ clear all;
 [StructuralParameters, OperationalParameters, AeroParameters] = load_data();
 
 %% Simulation setup
-sinusoidal = false;
+sinusoidal = true;
 dt = 0.25;
-tf = 10;
+tf = 600;
 t = 0:dt:tf;
 
 if sinusoidal
