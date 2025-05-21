@@ -6,11 +6,14 @@ clear all;
 
 [StructuralParameters, OperationalParameters, AeroParameters] = load_data();
 
+
 %% Simulation setup
 sinusoidal = false;
 dt = 0.25;
 tf = 10;
 t = 0:dt:tf;
+psi = 0; % Assuming blade starts vertical, 0 radians
+
 
 if sinusoidal
     OperationalParameters.V_sin = 15+0.5*cos(1.267*t) + 0.085*cos(2.534*t)+ 0.015*cos(3.801*t);
@@ -42,9 +45,12 @@ if sinusoidal
             if j == length(t)-1 
                 close(hWait);
             end
-            
+            % Implement the centrifugal and gravity stiffening terms
+            psi = psi + omega(1)*dt; % Update blade position
+            total_K = get_total_K(StructuralParameters, omega, psi)
+
             % Runge-Kutta integration
-            [x(:,j+1), dx(:,j+1), ddx(:,j+1)] = runge_kutta_step(x(:,j), dx(:,j), ddx(:,j), dt, V, omega, pitch, StructuralParameters.M, StructuralParameters.C, StructuralParameters.K, AeroParameters);
+            [x(:,j+1), dx(:,j+1), ddx(:,j+1)] = runge_kutta_step(x(:,j), dx(:,j), ddx(:,j), dt, V, omega, pitch, StructuralParameters.M, StructuralParameters.C, total_K, AeroParameters);
     
             
             % Velocity coupling
@@ -100,8 +106,15 @@ else
             %    close(hWait);
             %end
             
+            % Implement the centrifugal and gravity stiffening terms
+
+            % So its a bit weird just sending omega(1) in but it should be constant for all the values
+            % Not sure why omega is a vector to begin with
+            psi = psi + omega(1)*dt; % Update blade position 
+            total_K = get_total_K(StructuralParameters, omega(1), psi);
+
             % Runge-Kutta integration
-            [x(:,j+1), dx(:,j+1), ddx(:,j+1)] = runge_kutta_step(x(:,j), dx(:,j), ddx(:,j), dt, V, omega, pitch, StructuralParameters.M, StructuralParameters.C, StructuralParameters.K, AeroParameters);
+            [x(:,j+1), dx(:,j+1), ddx(:,j+1)] = runge_kutta_step(x(:,j), dx(:,j), ddx(:,j), dt, V, omega, pitch, StructuralParameters.M, StructuralParameters.C, total_K, AeroParameters);
     
             
             % Velocity coupling
