@@ -7,8 +7,8 @@ function F_modal = compute_aero_force(x, dx, v0, omega, pitch, radius, twist, ph
 
     % Rotate loads to flap and edge directions
 
-    FF = FN .* cos(pitch + twist) + FT .* sin(pitch + twist);
-    FE = FN .* -sin(pitch + twist) + FT .* cos(pitch + twist);
+    FF = FN .* cos(deg2rad(pitch + twist)) + FT .* sin(deg2rad(pitch + twist));
+    FE = FN .* -sin(deg2rad(pitch + twist)) + FT .* cos(deg2rad(pitch + twist));
 
     % Project to modal coordinates
     F_flap = trapz(radius, FF .* phi_1flap_aero);

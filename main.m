@@ -49,8 +49,8 @@ if sinusoidal
             
             % Velocity coupling
             velocity = [dx(1,j) * AeroParameters.phi_1flap_aero; dx(2,j) * AeroParameters.phi_1edge_aero];
-            V_inplane = velocity(1,:) .* cos(pitch + AeroParameters.twist_aero') - velocity(2,:) .* sin(pitch + AeroParameters.twist_aero');
-            V_outplane = velocity(1,:) .* sin(pitch + AeroParameters.twist_aero') + velocity(2,:) .* cos(pitch + AeroParameters.twist_aero');
+            V_inplane = velocity(1,:) .* cos(deg2rad(pitch + AeroParameters.twist_aero)) + velocity(2,:) .* sin(deg2rad(pitch + AeroParameters.twist_aero));
+            V_outplane = -velocity(1,:) .* sin(deg2rad(pitch + AeroParameters.twist_aero)) + velocity(2,:) .* cos(deg2rad(pitch + AeroParameters.twist_aero));
             
             V = OperationalParameters.V_sin(j+1)*ones(size(AeroParameters.radius_aero)) - V_outplane;
             omega = omega_org - V_inplane ./ AeroParameters.radius_aero;
@@ -84,7 +84,8 @@ else
         V_org = OperationalParameters.v0_values(i) * ones(size(AeroParameters.radius_aero));
         omega_org = OperationalParameters.omega_values(i) * ones(size(AeroParameters.radius_aero));
         pitch = OperationalParameters.pitch_values(i);
-    
+
+        fprintf("Pitch angle: %f\n", pitch);
         V = V_org;
         omega = omega_org;
     
@@ -106,8 +107,8 @@ else
             
             % Velocity coupling
             velocity = [dx(1,j) * AeroParameters.phi_1flap_aero; dx(2,j) * AeroParameters.phi_1edge_aero];
-            V_inplane = velocity(1,:) .* cos(pitch + AeroParameters.twist_aero') - velocity(2,:) .* sin(pitch + AeroParameters.twist_aero');
-            V_outplane = velocity(1,:) .* sin(pitch + AeroParameters.twist_aero') + velocity(2,:) .* cos(pitch + AeroParameters.twist_aero');
+            V_inplane = velocity(1,:) .* cos(deg2rad(pitch + AeroParameters.twist_aero)) + velocity(2,:) .* sin(deg2rad(pitch + AeroParameters.twist_aero));
+            V_outplane = -velocity(1,:) .* sin(deg2rad(pitch + AeroParameters.twist_aero)) + velocity(2,:) .* cos(deg2rad(pitch + AeroParameters.twist_aero));
             
             V = V_org - V_outplane;
             omega = omega_org - V_inplane ./ AeroParameters.radius_aero;
