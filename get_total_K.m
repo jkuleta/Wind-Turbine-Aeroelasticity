@@ -7,12 +7,12 @@ function total_K = get_total_K(StructuralParameters, omega, psi)
     ddphi_1flap = StructuralParameters.ddphi_1flap;
     ddphi_1edge = StructuralParameters.ddphi_1edge;
     
-    disp(['K_1edgeS = ', num2str(K_1edgeS)]);
-    disp(['K_1flapS = ', num2str(K_1flapS)]);
-    disp(['radius = ', mat2str(radius)]);
-    disp(['mass_distribution = ', mat2str(mass_distribution)]);
-    disp(['ddphi_1flap = ', mat2str(ddphi_1flap)]);
-    disp(['ddphi_1edge = ', mat2str(ddphi_1edge)]);
+    % disp(['K_1edgeS = ', num2str(K_1edgeS)]);
+    % disp(['K_1flapS = ', num2str(K_1flapS)]);
+    % disp(['radius = ', mat2str(radius)]);
+    % disp(['mass_distribution = ', mat2str(mass_distribution)]);
+    % disp(['ddphi_1flap = ', mat2str(ddphi_1flap)]);
+    % disp(['ddphi_1edge = ', mat2str(ddphi_1edge)]);
     
 
     K_centrifugal_flap = centrifugal_stiffening(radius, mass_distribution, omega, ddphi_1flap);
