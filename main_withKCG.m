@@ -36,8 +36,8 @@ for i = 1:length(OperationalParameters.v0_values)
         total_K = get_total_K(StructuralParameters, omega(1), psi);
         [x_KCG(:,j+1), dx_KCG(:,j+1), ddx_KCG(:,j+1)] = runge_kutta_step(x_KCG(:,j), dx_KCG(:,j), ddx_KCG(:,j), dt, V, omega, pitch, StructuralParameters.M, StructuralParameters.C, total_K, AeroParameters);
         velocity = [dx_KCG(1,j) * AeroParameters.phi_1flap_aero; dx_KCG(2,j) * AeroParameters.phi_1edge_aero];
-        V_inplane = velocity(1,:) .* cos(pitch + AeroParameters.twist_aero') - velocity(2,:) .* sin(pitch + AeroParameters.twist_aero');
-        V_outplane = velocity(1,:) .* sin(pitch + AeroParameters.twist_aero') + velocity(2,:) .* cos(pitch + AeroParameters.twist_aero');
+        V_inplane = velocity(1,:) .* cos(deg2rad(pitch + AeroParameters.twist_aero)) - velocity(2,:) .* sin(deg2rad(pitch + AeroParameters.twist_aero));
+        V_outplane = velocity(1,:) .* sin(deg2rad(pitch + AeroParameters.twist_aero)) + velocity(2,:) .* cos(deg2rad(pitch + AeroParameters.twist_aero));
         V = V_org - V_outplane;
         omega = omega_org - V_inplane ./ AeroParameters.radius_aero;
     end
