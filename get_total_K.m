@@ -4,24 +4,24 @@ function total_K = get_total_K(StructuralParameters, omega, psi)
     K_1flapS = StructuralParameters.K_1flap;
     radius = StructuralParameters.radius;
     mass_distribution = StructuralParameters.mass_distribution;
-    ddphi_1flap = StructuralParameters.ddphi_1flap;
-    ddphi_1edge = StructuralParameters.ddphi_1edge;
+    dphi_1flap = StructuralParameters.dphi_1flap;
+    dphi_1edge = StructuralParameters.dphi_1edge;
     
     % disp(['K_1edgeS = ', num2str(K_1edgeS)]);
     % disp(['K_1flapS = ', num2str(K_1flapS)]);
     % disp(['radius = ', mat2str(radius)]);
     % disp(['mass_distribution = ', mat2str(mass_distribution)]);
-    % disp(['ddphi_1flap = ', mat2str(ddphi_1flap)]);
-    % disp(['ddphi_1edge = ', mat2str(ddphi_1edge)]);
+    % disp(['ddphi_1flap = ', mat2str(dphi_1flap)]);
+    % disp(['ddphi_1edge = ', mat2str(dphi_1edge)]);
     
 
-    K_centrifugal_flap = centrifugal_stiffening(radius, mass_distribution, omega, ddphi_1flap);
-    K_gravity_flap = gravity_stiffening(radius, mass_distribution, ddphi_1flap, psi); % or use twist if available
+    K_centrifugal_flap = centrifugal_stiffening(radius, mass_distribution, omega, dphi_1flap);
+    K_gravity_flap = gravity_stiffening(radius, mass_distribution, dphi_1flap, psi); % or use twist if available
 
     K_1flap = K_1flapS + K_centrifugal_flap - K_gravity_flap;
 
-    K_centrifugal_edge = centrifugal_stiffening(radius, mass_distribution, omega, ddphi_1edge);
-    K_gravity_edge = gravity_stiffening(radius, mass_distribution, ddphi_1edge, psi); % or use twist if available
+    K_centrifugal_edge = centrifugal_stiffening(radius, mass_distribution, omega, dphi_1edge);
+    K_gravity_edge = gravity_stiffening(radius, mass_distribution, dphi_1edge, psi); % or use twist if available
 
     K_1edge = K_1edgeS + K_centrifugal_edge - K_gravity_edge;
 

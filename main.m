@@ -108,9 +108,6 @@ else
             %end
             
             % Implement the centrifugal and gravity stiffening terms
-
-            % So its a bit weird just sending omega(1) in but it should be constant for all the values
-            % Not sure why omega is a vector to begin with
             psi = psi + omega(1)*dt; % Update blade position 
             total_K = get_total_K(StructuralParameters, omega(1), psi);
 
