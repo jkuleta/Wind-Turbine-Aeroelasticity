@@ -9,7 +9,7 @@ clear all;
 
 %% Simulation setup
 sinusoidal = false;
-dt = 0.25;
+dt = 0.1;
 tf = 10;
 t = 0:dt:tf;
 psi = 0; % Assuming blade starts vertical, 0 radians
@@ -47,7 +47,8 @@ if sinusoidal
             end
             % Implement the centrifugal and gravity stiffening terms
             psi = psi + omega(1)*dt; % Update blade position
-            total_K = get_total_K(StructuralParameters, omega, psi)
+            %total_K = get_total_K(StructuralParameters, omega, psi)
+            total_K = StructuralParameters.K;
 
             % Runge-Kutta integration
             [x(:,j+1), dx(:,j+1), ddx(:,j+1)] = runge_kutta_step(x(:,j), dx(:,j), ddx(:,j), dt, V, omega, pitch, StructuralParameters.M, StructuralParameters.C, total_K, AeroParameters);
@@ -117,20 +118,20 @@ else
             
             % Velocity coupling
             velocity = [dx(1,j) * AeroParameters.phi_1flap_aero; dx(2,j) * AeroParameters.phi_1edge_aero];
-            V_inplane = velocity(1,:) .* cos(deg2rad(pitch + AeroParameters.twist_aero)) + velocity(2,:) .* sin(deg2rad(pitch + AeroParameters.twist_aero));
-            V_outplane = -velocity(1,:) .* sin(deg2rad(pitch + AeroParameters.twist_aero)) + velocity(2,:) .* cos(deg2rad(pitch + AeroParameters.twist_aero));
+            V_outplane = velocity(1,:) .* cos(deg2rad(pitch + AeroParameters.twist_aero)) + velocity(2,:) .* sin(deg2rad(pitch + AeroParameters.twist_aero));
+            V_inplane = -velocity(1,:) .* sin(deg2rad(pitch + AeroParameters.twist_aero)) + velocity(2,:) .* cos(deg2rad(pitch + AeroParameters.twist_aero));
             
             V = V_org - V_outplane;
             omega = omega_org - V_inplane ./ AeroParameters.radius_aero;
     
         end
-        tip_deflection(:, i) = x(:, end);
+        tip_deflection(:, i) = [x(1, end)* StructuralParameters.phi_1flap(end); x(2, end)* StructuralParameters.phi_1edge(end)];
         
     end
     figure;
 
-    plot(OperationalParameters.v0_values, tip_deflection(1,:), 'LineWidth', 1.5,'Marker','*'); hold on;
-    plot(OperationalParameters.v0_values, tip_deflection(2,:), 'LineWidth', 1.5, 'Marker', '*'); 
+    plot(OperationalParameters.v0_values, tip_deflection(1,:), 'LineWidth', 1.5,'Marker','x'); hold on;
+    plot(OperationalParameters.v0_values, tip_deflection(2,:), 'LineWidth', 1.5, 'Marker', 'x'); 
     grid on;
     legend('Flapwise', 'Edgewise');
     xlabel('Wind Speed [m/s]');

@@ -15,6 +15,10 @@ tip_deflection_struct = zeros(2, length(OperationalParameters.v0_values));
 hWait = waitbar(0, 'Running simulation...');
 
 for i = 1:length(OperationalParameters.v0_values)
+    % Update progress bar
+    waitbar(i / length(OperationalParameters.v0_values), hWait, ...
+        sprintf('Running simulation... %5.1f%%', (i / length(OperationalParameters.v0_values)) * 100));
+        
     % --- Common setup ---
     x_KCG = zeros(2, length(t));
     dx_KCG = zeros(2, length(t));
@@ -28,12 +32,11 @@ for i = 1:length(OperationalParameters.v0_values)
     V = V_org;
     omega = omega_org;
     psi = 0;
-    disp(omega(1))
 
     % --- With centrifugal & gravity stiffening ---
     for j = 1:length(t)-1
-        psi = psi + omega(1)*dt;
-        total_K = get_total_K(StructuralParameters, omega(1), psi);
+        psi = psi + omega_org(1)*dt;
+        total_K = get_total_K(StructuralParameters, omega_org(1), psi);
         [x_KCG(:,j+1), dx_KCG(:,j+1), ddx_KCG(:,j+1)] = runge_kutta_step(x_KCG(:,j), dx_KCG(:,j), ddx_KCG(:,j), dt, V, omega, pitch, StructuralParameters.M, StructuralParameters.C, total_K, AeroParameters);
         velocity = [dx_KCG(1,j) * AeroParameters.phi_1flap_aero; dx_KCG(2,j) * AeroParameters.phi_1edge_aero];
         V_inplane = velocity(1,:) .* cos(deg2rad(pitch + AeroParameters.twist_aero)) - velocity(2,:) .* sin(deg2rad(pitch + AeroParameters.twist_aero));
@@ -58,10 +61,6 @@ for i = 1:length(OperationalParameters.v0_values)
         omega = omega_org - V_inplane ./ AeroParameters.radius_aero;
     end
     tip_deflection_struct(:, i) = x_struct(:, end);
-
-    % Update progress bar
-    waitbar(i / length(OperationalParameters.v0_values), hWait, ...
-        sprintf('Running simulation... %5.1f%%', (i / length(OperationalParameters.v0_values)) * 100));
 end
 
 
