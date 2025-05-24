@@ -9,6 +9,7 @@ clear all;
 
 %% Simulation setup
 sinusoidal = true;
+dynamic_inflow = true; % Set to true if you want to include dynamic inflow
 K_CG = true; % Set to true if you want to include centrifugal and gravity stiffening
 dt = 0.1;
 tf = 10;
@@ -131,6 +132,16 @@ else
             V_outplane = velocity(1,:) .* cos(deg2rad(pitch + AeroParameters.twist_aero)) + velocity(2,:) .* sin(deg2rad(pitch + AeroParameters.twist_aero));
             V_inplane = -velocity(1,:) .* sin(deg2rad(pitch + AeroParameters.twist_aero)) + velocity(2,:) .* cos(deg2rad(pitch + AeroParameters.twist_aero));
             
+            %Implement dynamic inflow
+            if dynamic_inflow
+                [Rx, FN, FT, P, a_list, prime_list] = BEM(V, omega, pitch);  % Call your existing BEM
+                CT = FN ./ (0.5 * OperationalParameters.rho * V.^2 * AeroParameters.radius_aero);
+                vind = V .* (1-a_list);
+                [vinduced, dvind_dt] = pitt_peters(CT, vinduced, V, StructuralParameters.R, dt)
+                V = V_org - V_outplane - vinduced;
+                omega = omega_org - V_inplane./AeroParameters.radius_aero;
+            end
+
             V = V_org - V_outplane;
             omega = omega_org - V_inplane ./ AeroParameters.radius_aero;
     

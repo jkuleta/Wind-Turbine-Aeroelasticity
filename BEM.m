@@ -1,5 +1,5 @@
 
-function [Rx,FN,FT,P]=BEM(total_v,total_omega,pitch)
+function [Rx,FN,FT,P,a_list,a_prime_list]=BEM(total_v,total_omega,pitch)
 %------------------------------------------------
 % Blade Element Momentum
 %------------------------------------------------
@@ -52,6 +52,8 @@ end
 NBS=length(BS);    %Number of blade sections
 % define vectors for blade section locations and loads in two directions
 Rx=zeros(NBS,1);FN=zeros(NBS,1);FT=zeros(NBS,1);
+a_list = zeros(NBS,1); % to store axial induction for each section
+a_prime_list = zeros(NBS,1); % to store tangential induction for each section
 
 % LOOP: from the root section to the tip section
 for i=1:NBS
@@ -125,8 +127,8 @@ for i=1:NBS
 % Result
 %------------------------------------------------
     % update value
-    a=ax;
-    a_prime=ax_prime;
+    a_list(i)=ax;
+    a_prime_list(i)=ax_prime;
     
     % force in two directions
     FN(i)=0.5*rou*((r*omega*(1+a_prime))^2+(v0*(1-a))^2)*chord*Cn*dr;
