@@ -8,7 +8,8 @@ clear all;
 
 
 %% Simulation setup
-sinusoidal = false;
+sinusoidal = true;
+K_CG = true; % Set to true if you want to include centrifugal and gravity stiffening
 dt = 0.1;
 tf = 10;
 t = 0:dt:tf;
@@ -46,9 +47,13 @@ if sinusoidal
                 close(hWait);
             end
             % Implement the centrifugal and gravity stiffening terms
-            psi = psi + omega(1)*dt; % Update blade position
-            %total_K = get_total_K(StructuralParameters, omega, psi)
-            total_K = StructuralParameters.K;
+            if K_CG
+                % Use the first element of omega for the calculation
+                psi = psi + omega(1)*dt; % Update blade position
+                total_K = get_total_K(StructuralParameters, omega(1), psi);
+            else
+                total_K = StructuralParameters.K; % Use the structural stiffness matrix
+            end
 
             % Runge-Kutta integration
             [x(:,j+1), dx(:,j+1), ddx(:,j+1)] = runge_kutta_step(x(:,j), dx(:,j), ddx(:,j), dt, V, omega, pitch, StructuralParameters.M, StructuralParameters.C, total_K, AeroParameters);
@@ -108,9 +113,14 @@ else
             %    close(hWait);
             %end
             
-            % Implement the centrifugal and gravity stiffening terms
-            psi = psi + omega(1)*dt; % Update blade position 
-            total_K = get_total_K(StructuralParameters, omega(1), psi);
+            %%%%%% Implement the centrifugal and gravity stiffening terms
+            if K_CG
+                % Use the first element of omega for the calculation
+                psi = psi + omega(1)*dt; % Update blade position
+                total_K = get_total_K(StructuralParameters, omega(1), psi);
+            else
+                total_K = StructuralParameters.K; % Use the structural stiffness matrix
+            end
 
             % Runge-Kutta integration
             [x(:,j+1), dx(:,j+1), ddx(:,j+1)] = runge_kutta_step(x(:,j), dx(:,j), ddx(:,j), dt, V, omega, pitch, StructuralParameters.M, StructuralParameters.C, total_K, AeroParameters);
