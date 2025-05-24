@@ -10,9 +10,10 @@ clear all;
 %% Simulation setup
 sinusoidal = true;
 dynamic_inflow = true; % Set to true if you want to include dynamic inflow
+vinduced = 0; % Initial induced velocity
 K_CG = true; % Set to true if you want to include centrifugal and gravity stiffening
 dt = 0.1;
-tf = 10;
+tf = 50;
 t = 0:dt:tf;
 psi = 0; % Assuming blade starts vertical, 0 radians
 
@@ -35,6 +36,7 @@ if sinusoidal
     V = OperationalParameters.V_sin(1)*ones(size(AeroParameters.radius_aero));
     omega = omega*ones(size(AeroParameters.radius_aero));
     omega_org = omega;
+    V_org = V(1);
 
     for j = 1:length(t)-1
             % Use MATLAB's built-in waitbar for progress indication
@@ -65,8 +67,22 @@ if sinusoidal
             V_inplane = velocity(1,:) .* cos(deg2rad(pitch + AeroParameters.twist_aero)) + velocity(2,:) .* sin(deg2rad(pitch + AeroParameters.twist_aero));
             V_outplane = -velocity(1,:) .* sin(deg2rad(pitch + AeroParameters.twist_aero)) + velocity(2,:) .* cos(deg2rad(pitch + AeroParameters.twist_aero));
             
-            V = OperationalParameters.V_sin(j+1)*ones(size(AeroParameters.radius_aero)) - V_outplane;
-            omega = omega_org - V_inplane ./ AeroParameters.radius_aero;
+%Implement dynamic inflow
+            if dynamic_inflow
+                disp("Running dynamic inflow...");
+                [Rx, FN, FT, P, a_list, prime_list] = BEM(V, omega, pitch);  % Call your existing BEM
+
+                CT = FN ./ (0.5 * OperationalParameters.rho * V.^2 .* AeroParameters.radius_aero);
+                vind = V .* (1-a_list);
+                vinduced = pitt_peters(CT, vinduced, V_org, StructuralParameters.R, dt);
+    
+                
+                V = OperationalParameters.V_sin(j+1)*ones(size(AeroParameters.radius_aero)) - -vinduced - V_outplane;
+                omega = omega_org - V_inplane ./ AeroParameters.radius_aero;
+            else
+                V = OperationalParameters.V_sin(j+1)*ones(size(AeroParameters.radius_aero)) - V_outplane;
+                omega = omega_org - V_inplane ./ AeroParameters.radius_aero;
+            end
             tip_deflection(:, j) = x(:, j);
     
         end
@@ -134,16 +150,17 @@ else
             
             %Implement dynamic inflow
             if dynamic_inflow
+                disp("Running dynamic inflow...");
                 [Rx, FN, FT, P, a_list, prime_list] = BEM(V, omega, pitch);  % Call your existing BEM
                 CT = FN ./ (0.5 * OperationalParameters.rho * V.^2 * AeroParameters.radius_aero);
                 vind = V .* (1-a_list);
-                [vinduced, dvind_dt] = pitt_peters(CT, vinduced, V, StructuralParameters.R, dt)
+                vinduced = pitt_peters(CT, vinduced, V, StructuralParameters.R, dt);
                 V = V_org - V_outplane - vinduced;
                 omega = omega_org - V_inplane./AeroParameters.radius_aero;
+            else
+                V = V_org - V_outplane;
+                omega = omega_org - V_inplane ./ AeroParameters.radius_aero;
             end
-
-            V = V_org - V_outplane;
-            omega = omega_org - V_inplane ./ AeroParameters.radius_aero;
     
         end
         tip_deflection(:, i) = [x(1, end)* StructuralParameters.phi_1flap(end); x(2, end)* StructuralParameters.phi_1edge(end)];

@@ -1,4 +1,4 @@
-function [vindnew, dvind_dt] = pitt_peters(Ct, vind, Uinf, R, dt)
+function vindnew = pitt_peters(Ct, vind, Uinf, R, dt)
 % Pitt-Peters dynamic inflow model
 % Ct: thrust coefficient on the actuator
 % vind: induced velocity
