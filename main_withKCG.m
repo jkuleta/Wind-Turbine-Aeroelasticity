@@ -28,7 +28,6 @@ for i = 1:length(OperationalParameters.v0_values)
     V = V_org;
     omega = omega_org;
     psi = 0;
-    disp(omega(1))
 
     % --- With centrifugal & gravity stiffening ---
     for j = 1:length(t)-1
@@ -48,7 +47,6 @@ for i = 1:length(OperationalParameters.v0_values)
     omega = omega_org;
     psi = 0;
     for j = 1:length(t)-1
-        psi = psi + omega(1)*dt;
         total_K = StructuralParameters.K;
         [x_struct(:,j+1), dx_struct(:,j+1), ddx_struct(:,j+1)] = runge_kutta_step(x_struct(:,j), dx_struct(:,j), ddx_struct(:,j), dt, V, omega, pitch, StructuralParameters.M, StructuralParameters.C, total_K, AeroParameters);
         velocity = [dx_struct(1,j) * AeroParameters.phi_1flap_aero; dx_struct(2,j) * AeroParameters.phi_1edge_aero];
