@@ -1,7 +1,7 @@
 % No Aero terms used? Not sure if we include the aeroterms.ddphi_1flap and ddphi_1edge or if they are purely structural terms
 function total_K = get_total_K(StructuralParameters, omega, psi)
     K_1edgeS = StructuralParameters.K_1edge;
-    K_1flapS = 3*StructuralParameters.K_1flap;
+    K_1flapS = StructuralParameters.K_1flap;
     radius = StructuralParameters.radius;
     mass_distribution = StructuralParameters.mass_distribution;
     dphi_1flap = StructuralParameters.dphi_1flap;
