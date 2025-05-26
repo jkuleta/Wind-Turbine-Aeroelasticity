@@ -8,14 +8,23 @@ clear all;
 
 
 %% Simulation setup
-sinusoidal = true;
-dynamic_inflow = true; % Set to true if you want to include dynamic inflow
+sinusoidal = false;
+dynamic_inflow = false; % Set to true if you want to include dynamic inflow
 vinduced = 0; % Initial induced velocity
-K_CG = true; % Set to true if you want to include centrifugal and gravity stiffening
+K_CG = false; % Set to true if you want to include centrifugal and gravity stiffening
 dt = 0.1;
-tf = 50;
+tf = 10;;
 t = 0:dt:tf;
 psi = 0; % Assuming blade starts vertical, 0 radians
+
+
+OperationalParameters.v0_values = OperationalParameters.v0_values(1:10:end); % Reduce number of wind speeds for sinusoidal case
+OperationalParameters.omega_values = OperationalParameters.omega_values(1:10:end);
+OperationalParameters.pitch_values = OperationalParameters.pitch_values(1:10:end);
+
+
+disp("Operational Parameters:");
+disp(OperationalParameters.v0_values);
 
 
 if sinusoidal
@@ -33,11 +42,6 @@ if sinusoidal
     dx = zeros(2, length(t));
     ddx = zeros(2, length(t));
 
-    V = OperationalParameters.V_sin(1)*ones(size(AeroParameters.radius_aero));
-    omega = omega*ones(size(AeroParameters.radius_aero));
-    omega_org = omega;
-    V_org = V(1);
-
     for j = 1:length(t)-1
             % Use MATLAB's built-in waitbar for progress indication
             if j == 1
@@ -49,40 +53,36 @@ if sinusoidal
             if j == length(t)-1 
                 close(hWait);
             end
+
+            V = OperationalParameters.V_sin(j);
             % Implement the centrifugal and gravity stiffening terms
             if K_CG
                 % Use the first element of omega for the calculation
-                psi = psi + omega(1)*dt; % Update blade position
-                total_K = get_total_K(StructuralParameters, omega(1), psi);
+                psi = psi + omega*dt; % Update blade position
+                total_K = get_total_K(StructuralParameters, omega, psi);
             else
                 total_K = StructuralParameters.K; % Use the structural stiffness matrix
             end
 
             % Runge-Kutta integration
             [x(:,j+1), dx(:,j+1), ddx(:,j+1)] = runge_kutta_step(x(:,j), dx(:,j), ddx(:,j), dt, V, omega, pitch, StructuralParameters.M, StructuralParameters.C, total_K, AeroParameters);
-    
-            
-            % Velocity coupling
-            velocity = [dx(1,j) * AeroParameters.phi_1flap_aero; dx(2,j) * AeroParameters.phi_1edge_aero];
-            V_inplane = velocity(1,:) .* cos(deg2rad(pitch + AeroParameters.twist_aero)) + velocity(2,:) .* sin(deg2rad(pitch + AeroParameters.twist_aero));
-            V_outplane = -velocity(1,:) .* sin(deg2rad(pitch + AeroParameters.twist_aero)) + velocity(2,:) .* cos(deg2rad(pitch + AeroParameters.twist_aero));
             
 %Implement dynamic inflow
-            if dynamic_inflow
-                disp("Running dynamic inflow...");
-                [Rx, FN, FT, P, a_list, prime_list] = BEM(V, omega, pitch);  % Call your existing BEM
+            %if dynamic_inflow
+            %    disp("Running dynamic inflow...");
+            %    [Rx, FN, FT, P, a_list, prime_list] = BEM(V, omega, pitch);  % Call your existing BEM
 
-                CT = FN ./ (0.5 * OperationalParameters.rho * V.^2 .* AeroParameters.radius_aero);
-                vind = V .* (1-a_list);
-                vinduced = pitt_peters(CT, vinduced, V_org, StructuralParameters.R, dt);
+            %    CT = FN ./ (0.5 * OperationalParameters.rho * V.^2 .* AeroParameters.radius_aero);
+            %    vind = V .* (1-a_list);
+            %    vinduced = pitt_peters(CT, vinduced, V_org, StructuralParameters.R, dt);
     
                 
-                V = OperationalParameters.V_sin(j+1)*ones(size(AeroParameters.radius_aero)) - -vinduced - V_outplane;
-                omega = omega_org - V_inplane ./ AeroParameters.radius_aero;
-            else
-                V = OperationalParameters.V_sin(j+1)*ones(size(AeroParameters.radius_aero)) - V_outplane;
-                omega = omega_org - V_inplane ./ AeroParameters.radius_aero;
-            end
+            %    V = OperationalParameters.V_sin(j+1)*ones(size(AeroParameters.radius_aero)) - -vinduced - V_outplane;
+            %    omega = omega_org - V_inplane ./ AeroParameters.radius_aero;
+            %else
+            %    V = OperationalParameters.V_sin(j+1)*ones(size(AeroParameters.radius_aero)) - V_outplane;
+            %    omega = omega_org - V_inplane ./ AeroParameters.radius_aero;
+            %end
             tip_deflection(:, j) = x(:, j);
     
         end
@@ -109,14 +109,11 @@ else
         x = zeros(2, length(t));
         dx = zeros(2, length(t));
         ddx = zeros(2, length(t));
-    
-        V_org = OperationalParameters.v0_values(i) * ones(size(AeroParameters.radius_aero));
-        omega_org = OperationalParameters.omega_values(i) * ones(size(AeroParameters.radius_aero));
-        pitch = OperationalParameters.pitch_values(i);
 
-        fprintf("Pitch angle: %f\n", pitch);
-        V = V_org;
-        omega = omega_org;
+        V = OperationalParameters.v0_values(i);
+        disp("Wind Speed: " + num2str(V) + " m/s");
+        omega = OperationalParameters.omega_values(i);
+        pitch = OperationalParameters.pitch_values(i);
     
         for j = 1:length(t)-1
             % Use MATLAB's built-in waitbar for progress indication
@@ -133,8 +130,8 @@ else
             %%%%%% Implement the centrifugal and gravity stiffening terms
             if K_CG
                 % Use the first element of omega for the calculation
-                psi = psi + omega(1)*dt; % Update blade position
-                total_K = get_total_K(StructuralParameters, omega(1), psi);
+                psi = psi + omega*dt; % Update blade position
+                total_K = get_total_K(StructuralParameters, omega, psi);
             else
                 total_K = StructuralParameters.K; % Use the structural stiffness matrix
             end
@@ -143,24 +140,19 @@ else
             [x(:,j+1), dx(:,j+1), ddx(:,j+1)] = runge_kutta_step(x(:,j), dx(:,j), ddx(:,j), dt, V, omega, pitch, StructuralParameters.M, StructuralParameters.C, total_K, AeroParameters);
     
             
-            % Velocity coupling
-            velocity = [dx(1,j) * AeroParameters.phi_1flap_aero; dx(2,j) * AeroParameters.phi_1edge_aero];
-            V_outplane = velocity(1,:) .* cos(deg2rad(pitch + AeroParameters.twist_aero)) + velocity(2,:) .* sin(deg2rad(pitch + AeroParameters.twist_aero));
-            V_inplane = -velocity(1,:) .* sin(deg2rad(pitch + AeroParameters.twist_aero)) + velocity(2,:) .* cos(deg2rad(pitch + AeroParameters.twist_aero));
-            
             %Implement dynamic inflow
-            if dynamic_inflow
-                disp("Running dynamic inflow...");
-                [Rx, FN, FT, P, a_list, prime_list] = BEM(V, omega, pitch);  % Call your existing BEM
-                CT = FN ./ (0.5 * OperationalParameters.rho * V.^2 * AeroParameters.radius_aero);
-                vind = V .* (1-a_list);
-                vinduced = pitt_peters(CT, vinduced, V, StructuralParameters.R, dt);
-                V = V_org - V_outplane - vinduced;
-                omega = omega_org - V_inplane./AeroParameters.radius_aero;
-            else
-                V = V_org - V_outplane;
-                omega = omega_org - V_inplane ./ AeroParameters.radius_aero;
-            end
+            %if dynamic_inflow
+            %    disp("Running dynamic inflow...");
+            %    [Rx, FN, FT, P, a_list, prime_list] = BEM(V, omega, pitch);  % Call your existing BEM
+            %    CT = FN ./ (0.5 * OperationalParameters.rho * V.^2 * AeroParameters.radius_aero);
+            %    vind = V .* (1-a_list);
+            %    vinduced = pitt_peters(CT, vinduced, V, StructuralParameters.R, dt);
+            %    V = V_org - V_outplane - vinduced;
+            %    omega = omega_org - V_inplane./AeroParameters.radius_aero;
+            %else
+            %    V = V_org - V_outplane;
+            %    omega = omega_org - V_inplane ./ AeroParameters.radius_aero;
+            %end
     
         end
         tip_deflection(:, i) = [x(1, end)* StructuralParameters.phi_1flap(end); x(2, end)* StructuralParameters.phi_1edge(end)];

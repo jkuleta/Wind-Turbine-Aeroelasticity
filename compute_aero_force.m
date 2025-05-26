@@ -3,7 +3,7 @@ function F_modal = compute_aero_force(x, dx, v0, omega, pitch, radius, twist, ph
     % Convert modal deflection to blade deflection shape
     % (You could use phi*modal amplitude here, shape already given)
 
-    [Rx,FN,FT,~] = BEM(v0, omega, pitch);  % Call your existing BEM
+    [Rx,FN,FT,~] = BEM(v0, omega, pitch, phi_1edge_aero, phi_1flap_aero,dx);  % Call your existing BEM
 
     % Rotate loads to flap and edge directions
 
