@@ -12,8 +12,8 @@ sinusoidal = false;
 dynamic_inflow = false; % Set to true if you want to include dynamic inflow
 vinduced = 0; % Initial induced velocity
 K_CG = false; % Set to true if you want to include centrifugal and gravity stiffening
-dt = 0.1;
-tf = 10;;
+dt = 0.01;
+tf = 30;
 t = 0:dt:tf;
 psi = 0; % Assuming blade starts vertical, 0 radians
 
@@ -22,10 +22,33 @@ OperationalParameters.v0_values = OperationalParameters.v0_values(1:10:end); % R
 OperationalParameters.omega_values = OperationalParameters.omega_values(1:10:end);
 OperationalParameters.pitch_values = OperationalParameters.pitch_values(1:10:end);
 
+V = OperationalParameters.v0_values(2); % Initial wind speed
+omega = OperationalParameters.omega_values(2); % Initial rotational speed
+pitch = OperationalParameters.pitch_values(2); % Initial pitch angle
 
-disp("Operational Parameters:");
-disp(OperationalParameters.v0_values);
 
+x = zeros(2,length(t));
+dx = zeros(2,length(t));
+ddx = zeros(2,length(t));
+for j = 1:length(t)-1
+
+
+    % Runge-Kutta integration
+    [x(:,j+1), dx(:,j+1), ddx(:,j+1)] = runge_kutta_step(x(:,j), dx(:,j), ddx(:,j), dt, V, omega, pitch, StructuralParameters.M, StructuralParameters.C, StructuralParameters.K, AeroParameters, StructuralParameters);
+
+    disp("Time: " + num2str(t(j)) + " s, Flapwise: " + num2str(x(1,j)) + " m, Edgewise: " + num2str(x(2,j)) + " m");
+    disp("Acceleration Flapwise: " + num2str(ddx(1,j)) + " m/s^2, Edgewise: " + num2str(ddx(2,j)) + " m/s^2");
+    disp("Velocity Flapwise: " + num2str(dx(1,j)) + " m/s, Edgewise: " + num2str(dx(2,j)) + " m/s");
+
+end
+
+figure;
+plot(t, x(1,:), 'LineWidth', 1.5,'Marker','x'); hold on;
+plot(t, x(2,:), 'LineWidth', 1.5, 'Marker', 'x');
+grid on;
+
+
+error("STOP HERE");
 
 if sinusoidal
     OperationalParameters.V_sin = 15+0.5*cos(1.267*t) + 0.085*cos(2.534*t)+ 0.015*cos(3.801*t);
