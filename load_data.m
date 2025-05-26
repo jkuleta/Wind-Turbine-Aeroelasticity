@@ -80,7 +80,7 @@ function [StructuralParameters, OperationalParameters, AeroParameters] = load_da
     StructuralParameters.K_1edge = trapz(StructuralParameters.radius, StructuralParameters.edge_stiffness_distribution.*(StructuralParameters.ddphi_1edge.^2));
 
     StructuralParameters.M = diag([StructuralParameters.M_1flap, StructuralParameters.M_1edge]);
-    StructuralParameters.K = diag([3*StructuralParameters.K_1flap, StructuralParameters.K_1edge]);
+    StructuralParameters.K = diag([StructuralParameters.K_1flap, StructuralParameters.K_1edge]);
     StructuralParameters.C = diag([2*StructuralParameters.damping_flapwise * sqrt(StructuralParameters.K_1flap*StructuralParameters.M_1flap), ...
             2*StructuralParameters.damping_edgewise * sqrt(StructuralParameters.K_1edge*StructuralParameters.M_1edge)]);
 
