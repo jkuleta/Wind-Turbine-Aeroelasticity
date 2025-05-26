@@ -11,9 +11,9 @@ clear all;
 sinusoidal = false;
 dynamic_inflow = false; % Set to true if you want to include dynamic inflow
 vinduced = 0; % Initial induced velocity
-K_CG = false; % Set to true if you want to include centrifugal and gravity stiffening
-dt = 0.1;
-tf = 10;;
+K_CG = true; % Set to true if you want to include centrifugal and gravity stiffening
+dt = 0.02;
+tf = 50;
 t = 0:dt:tf;
 psi = 0; % Assuming blade starts vertical, 0 radians
 
@@ -94,70 +94,53 @@ else
         if i == 1
             hWait = waitbar(0, 'Running simulation...');
         end
-    
+
         if mod(i, max(1, floor((length(OperationalParameters.v0_values) - 1) / 100))) == 0 || i == length(OperationalParameters.v0_values)
             waitbar(i / length(OperationalParameters.v0_values), hWait, ...
                 sprintf('Running simulation... %5.1f%%', (i / length(OperationalParameters.v0_values)) * 100));
         end
-    
+
         if i == length(OperationalParameters.v0_values)
             close(hWait);
         end
-    
-        
-        % defitnition of arrays
-        x = zeros(2, length(t));
-        dx = zeros(2, length(t));
-        ddx = zeros(2, length(t));
 
+        % Extract operational parameters for this wind speed
         V = OperationalParameters.v0_values(i);
-        disp("Wind Speed: " + num2str(V) + " m/s");
         omega = OperationalParameters.omega_values(i);
         pitch = OperationalParameters.pitch_values(i);
-    
-        for j = 1:length(t)-1
-            % Use MATLAB's built-in waitbar for progress indication
-            %if j == 1 && time_loop == true
-            %    hWait = waitbar(0, 'Running simulation...');
-            %end
-            %if mod(j, max(1, floor((length(t)-1)/100))) == 0 || j == length(t)-1 && time_loop == true
-            %    waitbar(j/(length(t)-1), hWait, sprintf('Running simulation... %5.1f%%', (j/(length(t)-1))*100));
-            %end
-            %if j == length(t)-1 && time_loop == true
-            %    close(hWait);
-            %end
-            
-            %%%%%% Implement the centrifugal and gravity stiffening terms
-            if K_CG
-                % Use the first element of omega for the calculation
-                psi = psi + omega*dt; % Update blade position
-                total_K = get_total_K(StructuralParameters, omega, psi);
-            else
-                total_K = StructuralParameters.K; % Use the structural stiffness matrix
-            end
 
-            % Runge-Kutta integration
-            [x(:,j+1), dx(:,j+1), ddx(:,j+1)] = runge_kutta_step(x(:,j), dx(:,j), ddx(:,j), dt, V, omega, pitch, StructuralParameters.M, StructuralParameters.C, total_K, AeroParameters);
-    
-            
-            %Implement dynamic inflow
-            %if dynamic_inflow
-            %    disp("Running dynamic inflow...");
-            %    [Rx, FN, FT, P, a_list, prime_list] = BEM(V, omega, pitch);  % Call your existing BEM
-            %    CT = FN ./ (0.5 * OperationalParameters.rho * V.^2 * AeroParameters.radius_aero);
-            %    vind = V .* (1-a_list);
-            %    vinduced = pitt_peters(CT, vinduced, V, StructuralParameters.R, dt);
-            %    V = V_org - V_outplane - vinduced;
-            %    omega = omega_org - V_inplane./AeroParameters.radius_aero;
-            %else
-            %    V = V_org - V_outplane;
-            %    omega = omega_org - V_inplane ./ AeroParameters.radius_aero;
-            %end
-    
+        disp("Wind Speed: " + num2str(V) + " m/s");
+
+        % Compute centrifugal and gravity stiffening if enabled
+        if K_CG
+            psi = psi + omega * dt; % blade azimuth
+            total_K = get_total_K(StructuralParameters, omega, psi);
+        else
+            total_K = StructuralParameters.K;
         end
-        tip_deflection(:, i) = [x(1, end)* StructuralParameters.phi_1flap(end); x(2, end)* StructuralParameters.phi_1edge(end)];
+
+        % Initial conditions: [x1; x2; dx1; dx2]
+        z0 = [0; 0; 0; 0]; 
+        tspan = t;
+
+        % Solve the system using ode45
+        [t_out, z_out] = ode45(@(t, z) ode_rhs(t, z, ...
+            StructuralParameters.M, ...
+            StructuralParameters.C, ...
+            total_K, ...
+            pitch, omega, V, AeroParameters), ...
+            tspan, z0);
+
+        % Extract displacement and velocity from z_out
+        x = z_out(:,1:2)';    % Displacement [2 x N]
+        dx = z_out(:,3:4)';   % Velocity [2 x N]
         
+        % Store tip deflection at blade tip (last node)
+        tip_deflection(:, i) = [ ...
+            x(1,end) * StructuralParameters.phi_1flap(end); ...
+            x(2,end) * StructuralParameters.phi_1edge(end)];
     end
+
     figure;
 
     plot(OperationalParameters.v0_values, tip_deflection(1,:), 'LineWidth', 1.5,'Marker','x'); hold on;

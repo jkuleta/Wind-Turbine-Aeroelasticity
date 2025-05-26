@@ -5,6 +5,13 @@ function F_modal = compute_aero_force(x, dx, v0, omega, pitch, radius, twist, ph
 
     [Rx,FN,FT,~] = BEM(v0, omega, pitch, phi_1edge_aero, phi_1flap_aero,dx);  % Call your existing BEM
 
+    if v0 == 12
+        disp('FN')
+        disp(FN)
+        disp('FT')
+        disp(FT)
+    end
+
     % Rotate loads to flap and edge directions
 
     FF = FN .* cos(deg2rad(pitch + twist)) + FT .* sin(deg2rad(pitch + twist));

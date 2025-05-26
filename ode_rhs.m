@@ -1,0 +1,13 @@
+function dzdt = ode_rhs(t, z, M, C, K, pitch, omega, V, AeroParameters)
+    x = z(1:2);
+    dx = z(3:4);
+
+    F = compute_aero_force(x, dx, V, omega, pitch, ...
+        AeroParameters.radius_aero, ...
+        AeroParameters.twist_aero, ...
+        AeroParameters.phi_1flap_aero, ...
+        AeroParameters.phi_1edge_aero);
+
+    ddx = M \ (F - C*dx - K*x);
+    dzdt = [dx; ddx];
+end
