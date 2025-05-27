@@ -14,7 +14,7 @@ function [x_next, dx_next, ddx_next] = runge_kutta_step(x, dx, ddx, dt, V, omega
     %   x_next    - next displacement state (2x1)
     %   dx_next   - next velocity state (2x1)
     %   ddx_next  - next acceleration state (2x1)
-    F = compute_aero_force(x, dx, V, omega, pitch, AeroParameters.radius_aero, AeroParameters.twist_aero, StructuralParameters);
+    F = compute_aero_force(x, dx, V, omega, pitch, AeroParameters.radius_aero, AeroParameters.twist_aero, StructuralParameters, AeroParameters);
     
     A_rk = 0.5* dt * ddx;
     b_rk = 0.5* dt * (dx + 0.5 * A_rk);

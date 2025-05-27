@@ -136,8 +136,8 @@ for i=1:NBS
 
     
     % force in two directions
-    FN(i)=0.5*rou*V_rel.^2*chord*Cn*dr;
-    FT(i)=0.5*rou*V_rel.^2*chord*Ct*dr;
+    FN(i)=0.5*rou*V_rel.^2*chord*Cn;
+    FT(i)=0.5*rou*V_rel.^2*chord*Ct;
     % bending moment
     Mx(i)=FT(i)*r;
 end
