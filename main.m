@@ -8,11 +8,11 @@ clear all;
 
 
 %% Simulation setup
-sinusoidal = true;
-dynamic_inflow = true; % Set to true if you want to include dynamic inflow
+sinusoidal = false;
+dynamic_inflow = false; % Set to true if you want to include dynamic inflow
 vinduced = 0; % Initial induced velocity
 K_CG = true; % Set to true if you want to include centrifugal and gravity stiffening
-dt = 0.1;
+dt = 0.2;
 tf = 50;
 t = 0:dt:tf;
 psi = 0; % Assuming blade starts vertical, 0 radians
