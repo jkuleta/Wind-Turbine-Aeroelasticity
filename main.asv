@@ -12,15 +12,11 @@ vinduced = 0; % Initial induced velocity
 K_CG = false; % Set to true if you want to include centrifugal and gravity stiffening
 OneSpeed = true; %Run only for 15ms 
 dt = 0.1;
-tf = 10;
+tf = 120;
 t = 0:dt:tf;
 psi = 0; % Assuming blade starts vertical, 0 radians
 
-Y = [0; 0; 0; 0]; % [x1; x2; dx1; dx2]
-Y0 = [0; 0; 0; 0]; % [x1; x2; dx1; dx2]
-
-global Moments;
-Moments = [];
+Moments = zeros(2, length(t));
 
 if sinusoidal
     OperationalParameters.V_sin = 15+0.5*cos(1.267*t) + 0.085*cos(2.534*t)+ 0.015*cos(3.801*t);
@@ -94,12 +90,15 @@ else
             total_K = StructuralParameters.K;
         end
 
+        Y0 = [0; 0; 0; 0]; % [x1; x2; dx1; dx2]
+        [dYdt, Moment] = odefun_blade(t, , V_org, omega_org, pitch, StructuralParameters.M, StructuralParameters.C, total_K, AeroParameters);
         [t_out, Y_out] = ode45(@(tt, YY) odefun_blade(tt, YY, V_org, omega_org, pitch, StructuralParameters.M, StructuralParameters.C, total_K, AeroParameters), t, Y0);
         x = Y_out(:,1:2)';
         dx = Y_out(:,3:4)';
 
         tip_deflection(:, i) = [x(1, end)* StructuralParameters.phi_1flap(end); x(2, end)* StructuralParameters.phi_1edge(end)];
 
+        Moments(:,i) = Moment;
     end
 
     % figure;
@@ -146,8 +145,8 @@ title('Edgewise Displacement and Velocity vs Time');
 grid on;
 
 figure;
-plot(linspace(0,tf, length(Moments)), Moments(1,:), 'LineWidth', 2, 'DisplayName', 'Flapwise'); hold on;
-plot(linspace(0,tf, length(Moments)), Moments(2,:), 'LineWidth', 2, 'DisplayName', 'Edgewise');
+plot(t_out, Moments(1,:), 'LineWidth', 2, 'DisplayName', 'Flapwise'); hold on;
+plot(t_out, Moments(2,:), 'LineWidth', 2, 'DisplayName', 'Edgewise');
 grid on;
 xlabel('Time [s]');
 ylabel('Root Bending Moment');

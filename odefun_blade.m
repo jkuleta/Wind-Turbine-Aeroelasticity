@@ -4,4 +4,5 @@ function dYdt = odefun_blade(t, Y, V, omega, pitch, M, C, K, AeroParameters)
     dx = Y(3:4);
     ddx = g(dx, x, V, omega, pitch, M, C, K, AeroParameters);
     dYdt = [dx; ddx];
+
 end
