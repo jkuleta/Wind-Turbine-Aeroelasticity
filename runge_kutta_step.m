@@ -1,4 +1,4 @@
-function [x_next, dx_next, ddx_next] = runge_kutta_step(x, dx, ddx, dt, V, omega, pitch, M, C, K, AeroParameters, StructuralParameters)
+function [x_next, dx_next, ddx_next] = runge_kutta_step(x, dx, ddx, dt, V, omega, pitch, M, C, K, AeroParameters)
     % One time step of Runge-Kutta integration for 2nd-order ODE
     %
     % Inputs:
@@ -14,27 +14,17 @@ function [x_next, dx_next, ddx_next] = runge_kutta_step(x, dx, ddx, dt, V, omega
     %   x_next    - next displacement state (2x1)
     %   dx_next   - next velocity state (2x1)
     %   ddx_next  - next acceleration state (2x1)
-    F = compute_aero_force(x, dx, V, omega, pitch, AeroParameters.radius_aero, AeroParameters.twist_aero, StructuralParameters, AeroParameters);
-    
-    A_rk = 0.5* dt * ddx;
-    b_rk = 0.5* dt * (dx + 0.5 * A_rk);
 
-    B_rk = 0.5 * dt * g(dx + A_rk, x + b_rk, M, C, K, F);
-    C_rk = 0.5 * dt * g(dx + B_rk, x + b_rk, M, C, K, F);
+
+    A_rk = dt/2 * ddx;
+    b_rk = dt/2 * (dx + 0.5 * A_rk);
+
+    B_rk = dt/2 * g(dx + A_rk, x + b_rk, V, omega, pitch, M, C, K, AeroParameters);
+    C_rk = dt/2 * g(dx + B_rk, x + b_rk, V, omega, pitch, M, C, K, AeroParameters);
     d_rk = dt * (dx + C_rk);
-    D_rk = dt/2 * g(dx + 2*C_rk, x + d_rk, M, C, K, F);
+    D_rk = dt/2 * g(dx + 2*C_rk, x + d_rk, V, omega, pitch, M, C, K, AeroParameters);
 
     x_next = x + dt * (dx + 1/3 * (A_rk + B_rk + C_rk));
     dx_next = dx + 1/3 * (A_rk + 2*B_rk + 2*C_rk + D_rk);
-    ddx_next = g(dx, x, M, C, K, F);
-end
-
-function ddx = g(dx, x, M, C, K, F)
-    % Mass, damping, stiffness must be accessible globally or passed
-
-    % Compute force based on current state
-
-    % Return acceleration    
-    ddx = linsolve(M, F - C*dx - K*x);
-
+    ddx_next = g(dx, x, V, omega, pitch, M, C, K, AeroParameters);
 end

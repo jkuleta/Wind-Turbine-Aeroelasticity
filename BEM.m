@@ -1,5 +1,5 @@
 
-function [Rx,FN,FT,P,a_list,a_prime_list]=BEM(v0,omega,pitch, phi_1edge_aero, phi_1flap_aero,dx)
+function [Rx,FN,FT,P,a_list,a_prime_list]=BEM(total_v,total_omega,pitch)
 %------------------------------------------------
 % Blade Element Momentum
 %------------------------------------------------
@@ -71,6 +71,9 @@ for i=1:NBS
     ax_prime=a_prime;         %change value
     a=ax-10*EPS;              %generate error, active iteration
     a_prime=ax_prime-10*EPS;  %generate error, active iteration
+    
+    v0 = total_v(i);
+    omega = total_omega(i);
 
     numite=0; % iteration counter
     %iteration, stop when error is smaller than EPS
@@ -126,18 +129,10 @@ for i=1:NBS
     % update value
     a_list(i)=ax;
     a_prime_list(i)=ax_prime;
-
-    % include blade movements
-    V_outplane = dx(1) * phi_1flap_aero(i);
-    V_inplane = dx(2) * phi_1edge_aero(i);
-
-    % calculate the local velocity
-    V_rel =sqrt(((1-a)*v0-V_outplane).^2 + (-(1+a_prime)*r*omega - V_inplane).^2); % relative velocity
-
     
     % force in two directions
-    FN(i)=0.5*rou*V_rel.^2*chord*Cn;
-    FT(i)=0.5*rou*V_rel.^2*chord*Ct;
+    FN(i)=0.5*rou*((r*omega*(1+a_prime))^2+(v0*(1-a))^2)*chord*Cn;
+    FT(i)=0.5*rou*((r*omega*(1+a_prime))^2+(v0*(1-a))^2)*chord*Ct;
     % bending moment
     Mx(i)=FT(i)*r;
 end
