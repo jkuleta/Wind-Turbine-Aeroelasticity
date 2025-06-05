@@ -1,221 +1,142 @@
 % Wind Turbine Aeroelasticity Simulation
-clc
+clc;
 close all;
-clear all;
-
+clear;
 
 [StructuralParameters, OperationalParameters, AeroParameters] = load_data();
 
-
 %% Simulation setup
-sinusoidal = false;
-dynamic_inflow = false; % Set to true if you want to include dynamic inflow
-vinduced = 0; % Initial induced velocity
-K_CG = true; % Set to true if you want to include centrifugal and gravity stiffening
+dynamic_inflow = false; % Enable if needed
+vinduced = 0;
 dt = 0.2;
-tf = 50;
-t = 0:dt:tf;
-psi = 0; % Assuming blade starts vertical, 0 radians
+tf = 100;
+tspan = [0 tf];
 
+% Output storage
+K_CG_options = [true, false];
+tip_deflection_all = cell(1, 2);
+time_hist = cell(1, 2);
 
-if sinusoidal
-    OperationalParameters.V_sin = 15+0.5*cos(1.267*t) + 0.085*cos(2.534*t)+ 0.015*cos(3.801*t);
-
-    % Find the index of a specific wind speed in OperationalParameters.v0_values
-    target_windspeed = 15; % example wind speed to find
-    [~, windspeed_idx] = min(abs(OperationalParameters.v0_values - target_windspeed));
-
-    pitch = OperationalParameters.pitch_values(windspeed_idx);
-    omega = OperationalParameters.omega_values(windspeed_idx);
-
-    % defitnition of arrays
-    x = zeros(2, length(t));
-    dx = zeros(2, length(t));
-    ddx = zeros(2, length(t));
-
-    V = OperationalParameters.V_sin(1)*ones(size(AeroParameters.radius_aero));
-    omega = omega*ones(size(AeroParameters.radius_aero));
-    omega_org = omega;
-    V_org = V(1);
-
-    for j = 1:length(t)-1
-            % Use MATLAB's built-in waitbar for progress indication
-            if j == 1
-                hWait = waitbar(0, 'Running simulation...');
-            end
-            if mod(j, max(1, floor((length(t)-1)/100))) == 0 || j == length(t)-1 
-                waitbar(j/(length(t)-1), hWait, sprintf('Running simulation... %5.1f%%', (j/(length(t)-1))*100));
-            end
-            if j == length(t)-1 
-                close(hWait);
-            end
-            % Implement the centrifugal and gravity stiffening terms
-            if K_CG
-                % Use the first element of omega for the calculation
-                psi = psi + omega(1)*dt; % Update blade position
-                total_K = get_total_K(StructuralParameters, omega(1), psi);
-            else
-                total_K = StructuralParameters.K; % Use the structural stiffness matrix
-            end
-
-            % Runge-Kutta integration
-            [x(:,j+1), dx(:,j+1), ddx(:,j+1)] = runge_kutta_step(x(:,j), dx(:,j), ddx(:,j), dt, V, omega, pitch, StructuralParameters.M, StructuralParameters.C, total_K, AeroParameters);
-    
-            
-            % Velocity coupling
-            velocity = [dx(1,j) * AeroParameters.phi_1flap_aero; dx(2,j) * AeroParameters.phi_1edge_aero];
-            V_inplane = velocity(1,:) .* cos(deg2rad(pitch + AeroParameters.twist_aero)) + velocity(2,:) .* sin(deg2rad(pitch + AeroParameters.twist_aero));
-            V_outplane = -velocity(1,:) .* sin(deg2rad(pitch + AeroParameters.twist_aero)) + velocity(2,:) .* cos(deg2rad(pitch + AeroParameters.twist_aero));
-            
-%Implement dynamic inflow
-            if dynamic_inflow
-                disp("Running dynamic inflow...");
-                [Rx, FN, FT, P, a_list, prime_list] = BEM(V, omega, pitch);  % Call your existing BEM
-
-                CT = FN ./ (0.5 * OperationalParameters.rho * V.^2 .* AeroParameters.radius_aero);
-                vind = V .* (1-a_list);
-                vinduced = pitt_peters(CT, vinduced, V_org, StructuralParameters.R, dt);
-    
-                
-                V = OperationalParameters.V_sin(j+1)*ones(size(AeroParameters.radius_aero)) - -vinduced - V_outplane;
-                omega = omega_org - V_inplane ./ AeroParameters.radius_aero;
-            else
-                V = OperationalParameters.V_sin(j+1)*ones(size(AeroParameters.radius_aero)) - V_outplane;
-                omega = omega_org - V_inplane ./ AeroParameters.radius_aero;
-            end
-            tip_deflection(:, j) = x(:, j);
-    
-        end
-    
-else
+for k = 1:2
+    K_CG = K_CG_options(k);
     tip_deflection = zeros(2, length(OperationalParameters.v0_values));
-    
+
     for i = 1:length(OperationalParameters.v0_values)
         if i == 1
-            hWait = waitbar(0, 'Running simulation...');
+            hWait = waitbar(0, sprintf('Running simulation (K\\_CG = %d)...', K_CG));
         end
-    
+
         if mod(i, max(1, floor((length(OperationalParameters.v0_values) - 1) / 100))) == 0 || i == length(OperationalParameters.v0_values)
             waitbar(i / length(OperationalParameters.v0_values), hWait, ...
-                sprintf('Running simulation... %5.1f%%', (i / length(OperationalParameters.v0_values)) * 100));
+                sprintf('Running simulation (K\\_CG = %d)... %5.1f%%', K_CG, (i / length(OperationalParameters.v0_values)) * 100));
         end
-    
+
         if i == length(OperationalParameters.v0_values)
             close(hWait);
         end
-    
-        
-        % defitnition of arrays
-        x = zeros(2, length(t));
-        dx = zeros(2, length(t));
-        ddx = zeros(2, length(t));
-    
+
+        % Inputs
         V_org = OperationalParameters.v0_values(i) * ones(size(AeroParameters.radius_aero));
         omega_org = OperationalParameters.omega_values(i) * ones(size(AeroParameters.radius_aero));
         pitch = OperationalParameters.pitch_values(i);
+        Y0 = [0; 0; 0; 0; 0];  % [x1; x2; dx1; dx2; psi]
 
-        fprintf("Pitch angle: %f\n", pitch);
-        V = V_org;
-        omega = omega_org;
-    
-        for j = 1:length(t)-1
-            % Use MATLAB's built-in waitbar for progress indication
-            %if j == 1 && time_loop == true
-            %    hWait = waitbar(0, 'Running simulation...');
-            %end
-            %if mod(j, max(1, floor((length(t)-1)/100))) == 0 || j == length(t)-1 && time_loop == true
-            %    waitbar(j/(length(t)-1), hWait, sprintf('Running simulation... %5.1f%%', (j/(length(t)-1))*100));
-            %end
-            %if j == length(t)-1 && time_loop == true
-            %    close(hWait);
-            %end
-            
-            %%%%%% Implement the centrifugal and gravity stiffening terms
-            if K_CG
-                % Use the first element of omega for the calculation
-                psi = psi + omega(1)*dt; % Update blade position
-                total_K = get_total_K(StructuralParameters, omega(1), psi);
-            else
-                total_K = StructuralParameters.K; % Use the structural stiffness matrix
-            end
+        opts = odeset('RelTol',1e-3,'AbsTol',1e-5);
 
-            % Runge-Kutta integration
-            [x(:,j+1), dx(:,j+1), ddx(:,j+1)] = runge_kutta_step(x(:,j), dx(:,j), ddx(:,j), dt, V, omega, pitch, StructuralParameters.M, StructuralParameters.C, total_K, AeroParameters);
-    
-            
-            % Velocity coupling
-            velocity = [dx(1,j) * AeroParameters.phi_1flap_aero; dx(2,j) * AeroParameters.phi_1edge_aero];
-            V_outplane = velocity(1,:) .* cos(deg2rad(pitch + AeroParameters.twist_aero)) + velocity(2,:) .* sin(deg2rad(pitch + AeroParameters.twist_aero));
-            V_inplane = -velocity(1,:) .* sin(deg2rad(pitch + AeroParameters.twist_aero)) + velocity(2,:) .* cos(deg2rad(pitch + AeroParameters.twist_aero));
-            
-            %Implement dynamic inflow
-            if dynamic_inflow
-                disp("Running dynamic inflow...");
-                [Rx, FN, FT, P, a_list, prime_list] = BEM(V, omega, pitch);  % Call your existing BEM
-                CT = FN ./ (0.5 * OperationalParameters.rho * V.^2 * AeroParameters.radius_aero);
-                vind = V .* (1-a_list);
-                vinduced = pitt_peters(CT, vinduced, V, StructuralParameters.R, dt);
-                V = V_org - V_outplane - vinduced;
-                omega = omega_org - V_inplane./AeroParameters.radius_aero;
-            else
-                V = V_org - V_outplane;
-                omega = omega_org - V_inplane ./ AeroParameters.radius_aero;
-            end
-    
+        % Solve ODE
+        [t_out, Y_out] = ode45(@(tt, YY) odefun_blade(tt, YY, V_org, omega_org, pitch, ...
+            StructuralParameters.M, StructuralParameters.C, K_CG, StructuralParameters, AeroParameters), ...
+            tspan, Y0, opts);
+
+        % Extract results
+        x = Y_out(:,1:2)';
+        t_out = t_out(:);
+
+        % Tip deflection time history
+        tip_flap = x(1,:) * StructuralParameters.phi_1flap(end);
+        tip_edge = x(2,:) * StructuralParameters.phi_1edge(end);
+
+        % Use findpeaks to estimate period of last cycle
+        [~, locs] = findpeaks(tip_flap, t_out, 'MinPeakProminence', 0.01);
+
+        % Require at least 2 peaks
+        if length(locs) >= 2
+            T_est = locs(end) - locs(end-1);  % Time between last two peaks
+        else
+            T_est = 1;  % fallback (1 second)
         end
-        tip_deflection(:, i) = [x(1, end)* StructuralParameters.phi_1flap(end); x(2, end)* StructuralParameters.phi_1edge(end)];
-        
-    end
-    figure;
 
-    plot(OperationalParameters.v0_values, tip_deflection(1,:), 'LineWidth', 1.5,'Marker','x'); hold on;
-    plot(OperationalParameters.v0_values, tip_deflection(2,:), 'LineWidth', 1.5, 'Marker', 'x'); 
-    grid on;
-    legend('Flapwise', 'Edgewise');
-    xlabel('Wind Speed [m/s]');
-    ylabel('Tip Deflection [m]');
+        % Get indices of final cycle
+        t_final = t_out(end);
+        idx_last_cycle = find(t_out >= t_final - T_est);
+
+        % Compute average absolute deflection in that cycle
+        max_flap_tip = mean(abs(tip_flap(idx_last_cycle)));
+        max_edge_tip = mean(abs(tip_edge(idx_last_cycle)));
+
+        tip_deflection(:, i) = [max_flap_tip; max_edge_tip];
+
+
+
+
+        % Store time-domain data from the **last** wind speed for this K_CG
+        if i == length(OperationalParameters.v0_values)
+            time_hist{k}.t_out = t_out;
+            time_hist{k}.x = Y_out(:,1:2)';
+            time_hist{k}.dx = Y_out(:,3:4)';
+            time_hist{k}.psi = Y_out(:,5);
+        end
+    end
+
+    tip_deflection_all{k} = tip_deflection;
 end
 
-
-
-
-%% Plotting
+%% Plot: Tip Deflection vs Wind Speed
 figure;
-
-% Use default MATLAB color order
-co = get(gca, 'ColorOrder');
-
-% Compute average displacement in each direction
-avg_flap = mean(x(1,:));
-avg_edge = mean(x(2,:));
-
-% Flapwise displacement and velocity
-subplot(3,1,1);
-plot(t, x(1,:), 'LineWidth', 2, 'Color', co(1,:)); hold on;
-plot(t, dx(1,:), '--', 'LineWidth', 2, 'Color', co(1,:));
-plot(t, avg_flap*ones(size(t)), ':', 'LineWidth', 1.5, 'Color', 'k'); % average as dotted line
-hold off;
-xlabel('Time [s]');
-ylabel('Flapwise');
-legend('Displacement', 'Velocity');
-title('Flapwise Displacement and Velocity vs Time');
+plot(OperationalParameters.v0_values, tip_deflection_all{1}(1,:), 'b-x', 'DisplayName', 'Flapwise w/ K_{CG}'); hold on;
+plot(OperationalParameters.v0_values, tip_deflection_all{2}(1,:), 'b--o', 'DisplayName', 'Flapwise w/o K_{CG}');
+plot(OperationalParameters.v0_values, tip_deflection_all{1}(2,:), 'r-x', 'DisplayName', 'Edgewise w/ K_{CG}');
+plot(OperationalParameters.v0_values, tip_deflection_all{2}(2,:), 'r--o', 'DisplayName', 'Edgewise w/o K_{CG}');
+xlabel('Wind Speed [m/s]');
+ylabel('Tip Deflection [m]');
+title('Tip Deflection vs Wind Speed with/without K_{CG}');
+legend('Location', 'best');
 grid on;
 
-% Edgewise displacement and velocity
-subplot(3,1,2);
-plot(t, x(2,:), 'LineWidth', 2, 'Color', co(2,:)); hold on;
-plot(t, dx(2,:), '--', 'LineWidth', 2, 'Color', co(2,:));
-plot(t, avg_edge*ones(size(t)), ':', 'LineWidth', 1.5, 'Color', 'k'); % average as dotted line
-hold off;
-xlabel('Time [s]');
-ylabel('Edgewise');
-legend('Displacement', 'Velocity');
-title('Edgewise Displacement and Velocity vs Time');
-grid on;
+%% Plot: Time-Domain Comparison for K_CG = true and false
+figure;
+titles = {'K_{CG} = true', 'K_{CG} = false'};
 
-subplot(3,1,3);
-plot(t, OperationalParameters.V_sin, 'LineWidth', 2, 'Color', co(3,:));
-xlabel('Time [s]');
-ylabel('Wind Speed [m/s]');
-grid on;
-title('Wind Speed');
+for k = 1:2
+    t_out = time_hist{k}.t_out;
+    x     = time_hist{k}.x;
+    dx    = time_hist{k}.dx;
+    psi   = time_hist{k}.psi;
+
+    avg_flap = mean(x(1,:));
+    avg_edge = mean(x(2,:));
+
+    subplot(3,2,1 + (k-1));
+    plot(t_out, x(1,:), 'LineWidth', 2); hold on;
+    plot(t_out, dx(1,:), '--', 'LineWidth', 2);
+    yline(avg_flap, ':k', 'LineWidth', 1.5);
+    xlabel('Time [s]'); ylabel('Flapwise');
+    title(['Flapwise - ' titles{k}]);
+    legend('Displacement', 'Velocity');
+    grid on;
+
+    subplot(3,2,3 + (k-1));
+    plot(t_out, x(2,:), 'LineWidth', 2); hold on;
+    plot(t_out, dx(2,:), '--', 'LineWidth', 2);
+    yline(avg_edge, ':k', 'LineWidth', 1.5);
+    xlabel('Time [s]'); ylabel('Edgewise');
+    title(['Edgewise - ' titles{k}]);
+    legend('Displacement', 'Velocity');
+    grid on;
+
+    subplot(3,2,5 + (k-1));
+    plot(t_out, psi, 'LineWidth', 2);
+    xlabel('Time [s]'); ylabel('\psi [rad]');
+    title(['Azimuth Angle (\psi) - ' titles{k}]);
+    grid on;
+end

@@ -2,11 +2,17 @@ function [StructuralParameters, OperationalParameters, AeroParameters] = load_da
 
   %% Load key parameters - AERODYNAMICS
     load 'STATE'
+    points = [14];
 
-    OperationalParameters.v0_values = WindSpeeds;
-    OperationalParameters.omega_values = RtSpeeds * 2 * pi / 60;
-    OperationalParameters.pitch_values = PitchAngles;
+    OperationalParameters.v0_values = WindSpeeds(points);
+    OperationalParameters.omega_values = RtSpeeds(points) * 2 * pi / 60;
+    OperationalParameters.pitch_values = PitchAngles(points);
     OperationalParameters.rho = 1.225; % Air density in kg/m^3
+
+    % OperationalParameters.v0_values = WindSpeeds;
+    % OperationalParameters.omega_values = RtSpeeds * 2 * pi / 60;
+    % OperationalParameters.pitch_values = PitchAngles;
+    % OperationalParameters.rho = 1.225; % Air density in kg/m^3
 
     %% Load structural blade data
     structural_data = importdata("Structural data.txt");
@@ -36,6 +42,7 @@ function [StructuralParameters, OperationalParameters, AeroParameters] = load_da
         4.7131  * xi.^5 - ...
         2.2555  * xi.^6;
         
+      disp(StructuralParameters.phi_1flap)
     StructuralParameters.dphi_1flap = (1 / R) * ( ...
           2 * 0.0622   * xi + ...
           3 * 1.7254   * xi.^2 - ...
@@ -80,6 +87,9 @@ function [StructuralParameters, OperationalParameters, AeroParameters] = load_da
     StructuralParameters.K_1edge = trapz(StructuralParameters.radius, StructuralParameters.edge_stiffness_distribution.*(StructuralParameters.ddphi_1edge.^2));
 
     StructuralParameters.M = diag([StructuralParameters.M_1flap, StructuralParameters.M_1edge]);
+    disp(['Flapwise mass: ', num2str(StructuralParameters.M_1flap), ' kg']);
+    disp(['Edgewise mass: ', num2str(StructuralParameters.M_1edge), ' kg']);
+
     StructuralParameters.K = diag([StructuralParameters.K_1flap, StructuralParameters.K_1edge]);
     StructuralParameters.C = diag([2*StructuralParameters.damping_flapwise * sqrt(StructuralParameters.K_1flap*StructuralParameters.M_1flap), ...
             2*StructuralParameters.damping_edgewise * sqrt(StructuralParameters.K_1edge*StructuralParameters.M_1edge)]);
@@ -87,6 +97,9 @@ function [StructuralParameters, OperationalParameters, AeroParameters] = load_da
     %% Natural frequencies
     StructuralParameters.omega_1flap = sqrt(StructuralParameters.K_1flap/StructuralParameters.M_1flap);
     StructuralParameters.omega_1edge = sqrt(StructuralParameters.K_1edge/StructuralParameters.M_1edge);
+    
+    disp(['Flapwise natural frequency: ', num2str(StructuralParameters.omega_1flap/(2*pi)), ' Hz']);
+    disp(['Edgewise natural frequency: ', num2str(StructuralParameters.omega_1edge/(2*pi)), ' Hz']);
 
     %% Aerodynamic properties
     blade_data = importdata('Blade/Blade section/Blade section.dat');
