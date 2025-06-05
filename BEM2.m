@@ -1,5 +1,5 @@
 
-function [Rx,FN,FT,P,a_list,a_prime_list]=BEM2(v0_array,omega0,V_inplane,V_outplane,pitch)
+function [Rx,FN,FT,P,a_list,a_prime_list]=BEM2(v0_array,omega0,V_inplane,V_outplane,pitch, coupling)
 %------------------------------------------------
 % Blade Element Momentum
 %------------------------------------------------
@@ -133,8 +133,8 @@ for i=1:NBS
     a_prime_list(i)=ax_prime;
     
     % force in two directions
-    FN(i)=0.5*rou*((r*omega*(1+a_prime)-V_inplane(i))^2+(v0*(1-a))^2-V_outplane(i))*chord*Cn;
-    FT(i)=0.5*rou*((r*omega*(1+a_prime)-V_inplane(i))^2+(v0*(1-a))^2-V_outplane(i))*chord*Ct;
+    FN(i)=0.5*rou*((r*omega*(1+a_prime)-V_inplane(i))^2+(v0*(1-a)-V_outplane(i))^2)*chord*Cn;
+    FT(i)=0.5*rou*((r*omega*(1+a_prime)-V_inplane(i))^2+(v0*(1-a)-V_outplane(i))^2)*chord*Ct;
     % bending moment
     Mx(i)=FT(i)*r;
 end

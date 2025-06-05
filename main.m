@@ -7,6 +7,7 @@ clear;
 
 %% Simulation setup
 dynamic_inflow = false; % Enable if needed
+coupling = true;
 vinduced = 0;
 dt = 0.2;
 tf = 100;
@@ -45,7 +46,7 @@ for k = 1:2
 
         % Solve ODE
         [t_out, Y_out] = ode45(@(tt, YY) odefun_blade(tt, YY, V_org, omega_org, pitch, ...
-            StructuralParameters.M, StructuralParameters.C, K_CG, StructuralParameters, AeroParameters), ...
+            StructuralParameters.M, StructuralParameters.C, K_CG, StructuralParameters, AeroParameters, coupling), ...
             tspan, Y0, opts);
 
         % Extract results
