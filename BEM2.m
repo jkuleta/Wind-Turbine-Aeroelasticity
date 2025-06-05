@@ -133,8 +133,12 @@ for i=1:NBS
     a_prime_list(i)=ax_prime;
     
     % force in two directions
-    FN(i)=0.5*rou*((r*omega*(1+a_prime)-V_inplane(i))^2+(v0*(1-a)-V_outplane(i))^2)*chord*Cn;
-    FT(i)=0.5*rou*((r*omega*(1+a_prime)-V_inplane(i))^2+(v0*(1-a)-V_outplane(i))^2)*chord*Ct;
+    if coupling
+        FN(i)=0.5*rou*((r*omega*(1+a_prime)-V_inplane(i))^2+(v0*(1-a)-V_outplane(i))^2)*chord*Cn;
+        FT(i)=0.5*rou*((r*omega*(1+a_prime)-V_inplane(i))^2+(v0*(1-a)-V_outplane(i))^2)*chord*Ct;
+    else
+        FN(i)=0.5*rou*((r*omega*(1+a_prime))^2+(v0*(1-a))^2)*chord*Cn;
+        FT(i)=0.5*rou*((r*omega*(1+a_prime))^2+(v0*(1-a))^2)*chord*Ct;
     % bending moment
     Mx(i)=FT(i)*r;
 end
