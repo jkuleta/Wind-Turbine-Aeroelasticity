@@ -139,6 +139,7 @@ for i=1:NBS
     else
         FN(i)=0.5*rou*((r*omega*(1+a_prime))^2+(v0*(1-a))^2)*chord*Cn;
         FT(i)=0.5*rou*((r*omega*(1+a_prime))^2+(v0*(1-a))^2)*chord*Ct;
+    end
     % bending moment
     Mx(i)=FT(i)*r;
 end
