@@ -2,17 +2,17 @@ function [StructuralParameters, OperationalParameters, AeroParameters] = load_da
 
   %% Load key parameters - AERODYNAMICS
     load 'STATE'
-    points = [14];
+%     points = [14];
 
-    OperationalParameters.v0_values = WindSpeeds(points);
-    OperationalParameters.omega_values = RtSpeeds(points) * 2 * pi / 60;
-    OperationalParameters.pitch_values = PitchAngles(points);
+%     OperationalParameters.v0_values = WindSpeeds(points);
+%     OperationalParameters.omega_values = RtSpeeds(points) * 2 * pi / 60;
+%     OperationalParameters.pitch_values = PitchAngles(points);
+%     OperationalParameters.rho = 1.225; % Air density in kg/m^3
+
+    OperationalParameters.v0_values = WindSpeeds;
+    OperationalParameters.omega_values = RtSpeeds * 2 * pi / 60;
+    OperationalParameters.pitch_values = PitchAngles;
     OperationalParameters.rho = 1.225; % Air density in kg/m^3
-
-    % OperationalParameters.v0_values = WindSpeeds;
-    % OperationalParameters.omega_values = RtSpeeds * 2 * pi / 60;
-    % OperationalParameters.pitch_values = PitchAngles;
-    % OperationalParameters.rho = 1.225; % Air density in kg/m^3
 
     %% Load structural blade data
     structural_data = importdata("Structural data.txt");

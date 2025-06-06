@@ -78,7 +78,8 @@ for k = 1:2
         tip_deflection(:, i) = [max_flap_tip; max_edge_tip];
 
 
-
+        M_flap_root = StructuralParameters.flap_stiffness_distribution(1) * StructuralParameters.ddphi_1flap(1) * x(1,:);
+        M_edge_root = StructuralParameters.edge_stiffness_distribution(1) * StructuralParameters.ddphi_1edge(1) * x(2,:);
 
         % Store time-domain data from the **last** wind speed for this K_CG
         if i == length(OperationalParameters.v0_values)
@@ -86,6 +87,8 @@ for k = 1:2
             time_hist{k}.x = Y_out(:,1:2)';
             time_hist{k}.dx = Y_out(:,3:4)';
             time_hist{k}.psi = Y_out(:,5);
+            time_hist{k}.M_flap_root = M_flap_root;
+            time_hist{k}.M_edge_root = M_edge_root;
         end
     end
 
@@ -117,7 +120,7 @@ for k = 1:2
     avg_flap = mean(x(1,:));
     avg_edge = mean(x(2,:));
 
-    subplot(3,2,1 + (k-1));
+    subplot(2,2,1 + (k-1));
     plot(t_out, x(1,:), 'LineWidth', 2); hold on;
     plot(t_out, dx(1,:), '--', 'LineWidth', 2);
     yline(avg_flap, ':k', 'LineWidth', 1.5);
@@ -126,7 +129,7 @@ for k = 1:2
     legend('Displacement', 'Velocity');
     grid on;
 
-    subplot(3,2,3 + (k-1));
+    subplot(2,2,3 + (k-1));
     plot(t_out, x(2,:), 'LineWidth', 2); hold on;
     plot(t_out, dx(2,:), '--', 'LineWidth', 2);
     yline(avg_edge, ':k', 'LineWidth', 1.5);
@@ -135,9 +138,4 @@ for k = 1:2
     legend('Displacement', 'Velocity');
     grid on;
 
-    subplot(3,2,5 + (k-1));
-    plot(t_out, psi, 'LineWidth', 2);
-    xlabel('Time [s]'); ylabel('\psi [rad]');
-    title(['Azimuth Angle (\psi) - ' titles{k}]);
-    grid on;
 end
