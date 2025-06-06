@@ -86,6 +86,15 @@ for i=1:NBS
         a=ax;
         a_prime=ax_prime;
         
+        % if ~isreal(a) || isnan(a) || isinf(a)
+        %     warning('a became complex/NaN/Inf, resetting to 0.3');
+        %     a = 0.3;
+        % end
+        % if ~isreal(a_prime) || isnan(a_prime) || isinf(a_prime)
+        %     warning('a_prime became complex/NaN/Inf, resetting to 0.1');
+        %     a_prime = 0.1;
+        % end
+
         % inflow angle
         Phi=atan(((1-a)*v0 - V_oop) /((1+a_prime)*r*omega-V_ip));
         Phi=rad2deg(Phi);
@@ -93,6 +102,8 @@ for i=1:NBS
         %AOA
         Alpha=Phi-Theta-pitch;
         
+
+
         % find Cl and Cd
         Cla=interp1(alpha,Cl,Alpha);
         Cda=interp1(alpha,Cd,Alpha);
@@ -133,9 +144,20 @@ for i=1:NBS
     a_prime_list(i)=ax_prime;
     
     % force in two directions
+    disp('i =')
+    disp(i);
+
+    disp('v_inplane =')
+    disp(V_inplane(i));
+
+    disp('v_oop =')
+
+    disp(V_outplane(i));
+    disp(V_oop);
+    
     if coupling
-        FN(i)=0.5*rou*((r*omega*(1+a_prime)-V_inplane(i))^2+(v0*(1-a)-V_outplane(i))^2)*chord*Cn;
-        FT(i)=0.5*rou*((r*omega*(1+a_prime)-V_inplane(i))^2+(v0*(1-a)-V_outplane(i))^2)*chord*Ct;
+        FN(i)=0.5*rou*((r*omega*(1+a_prime)-V_ip)^2+(v0*(1-a)-V_oop)^2)*chord*Cn;
+        FT(i)=0.5*rou*((r*omega*(1+a_prime)-V_ip)^2+(v0*(1-a)-V_oop)^2)*chord*Ct;
     else
         FN(i)=0.5*rou*((r*omega*(1+a_prime))^2+(v0*(1-a))^2)*chord*Cn;
         FT(i)=0.5*rou*((r*omega*(1+a_prime))^2+(v0*(1-a))^2)*chord*Ct;

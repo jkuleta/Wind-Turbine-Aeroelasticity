@@ -13,7 +13,7 @@ periodic = true; % Enable periodic boundary conditions
 
 vinduced = 0;
 dt = 0.2;
-tf = 60;
+tf = 10;
 tspan = [0 tf];
 
 % Output storage
