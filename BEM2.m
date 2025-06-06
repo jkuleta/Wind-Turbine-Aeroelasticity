@@ -74,8 +74,13 @@ for i=1:NBS
     
     v0 = v0_array(i);
     omega = omega0(i);
-    V_oop = V_outplane(i); % out-of-plane velocity
-    V_ip = V_inplane(i);   % in-plane velocity
+    if coupling
+        V_oop = V_outplane(i); % out-of-plane velocity
+        V_ip = V_inplane(i);   % in-plane velocity
+    else
+        V_oop = 0; % out-of-plane velocity
+        V_ip = 0;   % in-plane velocity
+    end
 
     numite=0; % iteration counter
     %iteration, stop when error is smaller than EPS
@@ -96,6 +101,7 @@ for i=1:NBS
         % end
 
         % inflow angle
+
         Phi=atan(((1-a)*v0 - V_oop) /((1+a_prime)*r*omega-V_ip));
         Phi=rad2deg(Phi);
         
