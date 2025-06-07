@@ -3,10 +3,9 @@ function dYdt = odefun_blade_periodic(t, Y, V_0, omega, pitch, M, C, K_CG, Struc
     dx  = Y(3:4);
     psi = Y(5);
     disp(t);
-
-    %V_0 = 15 * ones(size(AeroParameters.radius_aero));  % Constant wind speed of 15 m/s
-
-    V_0 = 15 + 0.5*cos(1.267*t) + 0.085*cos(2.534*t) + 0.015*cos(3.801*t) * ones(size(AeroParameters.radius_aero));
+    
+    %V_0 = (15 + 0.5*cos(1.267*t) + 0.085*cos(2.534*t) + 0.015*cos(3.801*t)) * ones(size(AeroParameters.radius_aero));
+    %V_0 = (20) * ones(size(AeroParameters.radius_aero));
 
     % Optionally use psi-dependent stiffness
     if K_CG

@@ -1,9 +1,9 @@
-function F_modal = compute_aero_force(x, dx, v0, omega, pitch, radius, twist, phi_1flap_aero, phi_1edge_aero, coupling)
+function [F_modal, FF, FE] = compute_aero_force(x, dx, v0, omega, pitch, radius, twist, phi_1flap_aero, phi_1edge_aero, coupling)
 
 
     velocity = [dx(1) * phi_1flap_aero, dx(2) * phi_1edge_aero];
     V_outplane = velocity(:,1) .* cos(deg2rad(pitch + twist)) + velocity(:,2) .* sin(deg2rad(pitch + twist));
-    V_inplane = -velocity(:,1) .* sin(deg2rad(pitch + twist)) + velocity(:,2) .* cos(deg2rad(pitch + twist));
+    V_inplane = velocity(:,1) .* sin(deg2rad(pitch + twist)) - velocity(:,2) .* cos(deg2rad(pitch + twist));
 
     [Rx,FN,FT,~] = BEM2(v0, omega,V_inplane,V_outplane, pitch, coupling);  % Call your existing BEM
 

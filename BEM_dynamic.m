@@ -1,9 +1,8 @@
-function [Rx, FN, FT, P, a_list, a_prime_list] = BEM3(v0_array, omega0, V_inplane, V_outplane, pitch, coupling)
+function [Rx, FN, FT, P, a_list, a_prime_list, a_out, a_prime_out] = BEM_dynamic(v0_array, omega0, V_inplane, V_outplane, pitch, coupling, dynamic_inflow, dt, a_prev, a_prime_prev)
 
 %------------------------------------------------
-% Blade Element Momentum (BEM) with coupling
+% Blade Element Momentum (BEM) with coupling and dynamic inflow memory
 %------------------------------------------------
-% Delft University of Technology – Wind Turbine Aeroelasticity
 
 % Fixed parameters
 B = 3;              % Number of blades
@@ -12,6 +11,10 @@ hubrad = 1.5;       % Hub radius [m]
 rho = 1.225;        % Air density [kg/m^3]
 EPS = 1e-5;         % Iteration tolerance
 REG = 1e-8;         % Regularization constant
+
+% Simulation options
+taustar_nw = 0.5;   % Constants for dynamic inflow model 
+taustar_fw = 2;
 
 % Load blade structure and aerofoil data
 BS = importdata('Blade/Blade section/Blade section.dat').data;
@@ -23,6 +26,7 @@ end
 NBS = size(BS,1);
 Rx = zeros(NBS,1); FN = zeros(NBS,1); FT = zeros(NBS,1); Mx = zeros(NBS,1);
 a_list = zeros(NBS,1); a_prime_list = zeros(NBS,1);
+a_out = zeros(NBS,1); a_prime_out = zeros(NBS,1);
 
 for i = 1:NBS
     % Section properties
@@ -48,12 +52,18 @@ for i = 1:NBS
 
     Sigma = chord * B / (2 * pi * r);
 
-    % Initial induction guesses
-    a = 0.0; a_prime = 0.0;
+    % Initial induction guesses (use memory if available)
+    if dynamic_inflow && nargin >= 10 && ~isempty(a_prev) && ~isempty(a_prime_prev)
+        a = a_prev(i);
+        a_prime = a_prime_prev(i);
+    else
+        a = 0.0;
+        a_prime = 0.0;
+    end
     ax = a; ax_prime = a_prime;
     numite = 0;
     
-    % Iteration loop
+    % Iteration loop (no dynamic inflow update inside)
     while abs(ax - a) >= EPS || abs(ax_prime - a_prime) >= EPS
         numite = numite + 1;
         a = ax; a_prime = ax_prime;
@@ -112,9 +122,22 @@ for i = 1:NBS
         end
     end
 
+    % --- Apply dynamic inflow update AFTER convergence ---
+    if dynamic_inflow
+        Vwake = max((1-2*ax)*v0, 0.1); % Avoid zero or negative
+        a_nw = a_prev(i).*exp(-dt./(taustar_nw*R./Vwake)) + ax.*(1-exp(-dt./(taustar_nw*R./Vwake)));
+        a_fw = a_prev(i).*exp(-dt./(taustar_fw*R./Vwake)) + ax.*(1-exp(-dt./(taustar_fw*R./Vwake)));
+        ap_nw = a_prime_prev(i).*exp(-dt./(taustar_nw*R./Vwake)) + ax_prime.*(1-exp(-dt./(taustar_nw*R./Vwake)));
+        ap_fw = a_prime_prev(i).*exp(-dt./(taustar_fw*R./Vwake)) + ax_prime.*(1-exp(-dt./(taustar_fw*R./Vwake)));
+        ax = 0.6*a_nw+0.4*a_fw;
+        ax_prime = 0.6*ap_nw+0.4*ap_fw;
+    end
+
     % Save final inductions
     a_list(i) = ax;
     a_prime_list(i) = ax_prime;
+    a_out(i) = ax;
+    a_prime_out(i) = ax_prime;
 
     % Recompute final Phi, Alpha, Cn, Ct using final a, a'
     Phi = atan(((1 - ax) * v0 - V_oop) / ((1 + ax_prime) * r * omega - V_ip));
