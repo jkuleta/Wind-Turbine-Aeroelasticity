@@ -1,5 +1,6 @@
+
 % =============================
-% Main Simulation Script (updated for dynamic a state)
+% Main Simulation Script (updated for dynamic a state with PREVIOUSTIME)
 % =============================
 clc;
 clear;
@@ -10,8 +11,8 @@ close all;
 %% Simulation setup
 periodic = true;
 vinduced = 0;
-dt = 0.05;
-tf = 10;
+dt = 0.2;
+tf = 30;
 tspan = 0:dt:tf;
 
 frequencies = [0.05, 0.2, 0.5];
@@ -23,14 +24,14 @@ i = 19; % index for 15 m/s
 
 for f_idx = 1:length(frequencies)
     f = frequencies(f_idx);
+    fprintf('\n===== Starting simulation for f = %.2f Hz =====\n', f);
 
     T_hist_all = cell(1,2);
     t_out_all = cell(1,2);
     pitch_all = cell(1,2);
-    a_dyn_all = cell(1,2);
-    a_steady_all = cell(1,2);
 
-    for k = 2
+    for k = 1:2
+        fprintf('-- Simulating with: %s\n', dynamic_inflow_labels{k});
         coupling = true;
         dynamic_inflow = dynamic_inflow_options(k);
 
@@ -38,25 +39,20 @@ for f_idx = 1:length(frequencies)
         omega_org = OperationalParameters.omega_values(i) * ones(size(AeroParameters.radius_aero));
 
         N_blade_sections = length(AeroParameters.radius_aero);
-        a_prev = zeros(N_blade_sections, 1);
-        a_prime_prev = zeros(N_blade_sections, 1);
-
         Y0 = [0; 0; 0; 0; 0];
 
-        PREVIOUS.a = 0;
-        PREVIOUS.a_prime = 0;
-
+        PREVIOUS.a = 0.15 * ones(N_blade_sections, 1);
+        PREVIOUS.a_prime = 0.01 * ones(N_blade_sections, 1);
 
         opts = odeset('RelTol',1e-3,'AbsTol',1e-5);
         [t_out, Y_out] = ode45(@(tt, YY) odefun_blade_dynamic(tt, YY, V_org, omega_org, f, ...
             StructuralParameters.M, StructuralParameters.C, false, StructuralParameters, AeroParameters, ...
             coupling, dynamic_inflow, PREVIOUS, dt), tspan, Y0, opts);
 
+
         N_time = size(Y_out,1);
         T_hist = zeros(N_time, 1);
         pitch_profile = zeros(N_time, 1);
-        a_mid_hist = zeros(N_time, 1);
-        a_steady_hist = zeros(N_time, 1);
         mid_idx = floor(N_blade_sections / 2);
 
         for it = 1:N_time
@@ -64,15 +60,28 @@ for f_idx = 1:length(frequencies)
             dx_t = Y_out(it,3:4)';
             pitch_t = 10.45 + 5 * sin(2 * pi * f * t_out(it));
 
+            if it == 1
+                PREVIOUS.a = 0.15 * ones(N_blade_sections,1);
+                PREVIOUS.a_prime = 0.01 * ones(N_blade_sections,1);
+            else
+                PREVIOUS.a = a_new;
+                PREVIOUS.a_prime = a_prime_new;
+            end
 
-            [F_modal, FF, FE, T, PREVIOU] = compute_aero_force_dynamic( ...
-                x_t, dx_t, V_org, omega_org, pitch_t, ...
-                AeroParameters.radius_aero, AeroParameters.twist_aero, ...
-                AeroParameters.phi_1flap_aero, AeroParameters.phi_1edge_aero, ...
-                coupling, dynamic_inflow, PREVIOUS, dt);
+            % Call BEM solver
+            [Rx, FN, FT, P, a_new, a_prime_new, a_steady] = BEM_dynamic( ...
+                V_org, omega_org, zeros(N_blade_sections,1), zeros(N_blade_sections,1), ...
+                pitch_t, coupling, dynamic_inflow, ...
+                PREVIOUS.a, PREVIOUS.a_prime, dt);
 
-            T_hist(it) = T;
+
+            T_hist(it) = sum(FN) * 3;  % Total thrust over 3 blades
             pitch_profile(it) = pitch_t;
+
+            if mod(it,5)==0 || it==1 || it==N_time
+                fprintf('   Time step %3d/%3d | t = %.2f s | pitch = %.2f deg | T = %.1f N\n', ...
+                        it, N_time, t_out(it), pitch_t, T_hist(it));
+            end
         end
 
         T_hist_all{k} = T_hist;
@@ -99,15 +108,5 @@ for f_idx = 1:length(frequencies)
     title(['Rotor Thrust vs Pitch Angle, f = ' num2str(f) ' Hz']);
     legend; grid on;
 
-%     figure;
-%     plot(t_out_all{1}, a_dyn_all{1}, 'b', 'DisplayName', 'a_{dyn} (ON)'); hold on;
-%     plot(t_out_all{1}, a_steady_all{1}, 'k--', 'DisplayName', 'a_{steady} (ON)');
-%     plot(t_out_all{2}, a_dyn_all{2}, 'r', 'DisplayName', 'a_{dyn} (OFF)');
-%     plot(t_out_all{2}, a_steady_all{2}, 'm--', 'DisplayName', 'a_{steady} (OFF)');
-%     xlabel('Time [s]');
-%     ylabel('Axial Induction');
-%     title(['Dynamic vs Steady Induction (mid-span), f = ' num2str(f) ' Hz']);
-%     legend;
-%     grid on;
-%     sgtitle(['Frequency: ' num2str(f) ' Hz']);
+    fprintf('>> Plot generated for f = %.2f Hz\n', f);
 end
