@@ -1,18 +1,19 @@
 % =============================
 % compute_aero_force_dynamic.m
 % =============================
-function [F_modal, FF, FE, T, a_next, a_prime_next, a_steady] = compute_aero_force_dynamic( ...
+function [F_modal, FF, FE, T, PREVIOUS] = compute_aero_force_dynamic( ...
     x, dx, v0, omega, pitch, radius, twist, ...
     phi_1flap_aero, phi_1edge_aero, ...
-    coupling, dynamic_inflow, a_prev, a_prime_prev, dt)
-
+    coupling, dynamic_inflow, PREVIOUS, dt)
+    
     velocity = [dx(1) * phi_1flap_aero, dx(2) * phi_1edge_aero];
     V_outplane = velocity(:,1) .* cosd(pitch + twist) + velocity(:,2) .* sind(pitch + twist);
     V_inplane  = velocity(:,1) .* sind(pitch + twist) - velocity(:,2) .* cosd(pitch + twist);
 
-    [Rx, FN, FT, T, a_next, a_prime_next, a_steady] = BEM_dynamic( ...
+    [Rx, FN, FT, T, PREVIOUS.a, PREVIOUS.a_prime] = BEM_dynamic( ...
         v0, omega, V_inplane, V_outplane, pitch, coupling, dynamic_inflow, ...
-        a_prev, a_prime_prev, dt);
+        PREVIOUS.a, PREVIOUS.a_prime, dt);
+    fprintf('BEM_dynamic: a_next=%.2f, a_prime_next=%.2f\n', PREVIOUS.a, PREVIOUS.a_prime);	
 
     FF = FN .* cosd(pitch + twist) + FT .* sind(pitch + twist);
     FE = -FN .* sind(pitch + twist) + FT .* cosd(pitch + twist);
