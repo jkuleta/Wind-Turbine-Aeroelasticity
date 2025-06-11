@@ -1,4 +1,4 @@
-function dYdt = odefun_blade_periodic(t, Y, V_0, omega, pitch, M, C, K_CG, StructuralParameters, AeroParameters, coupling)
+function dYdt = odefun_blade_periodic(t, Y, V_0, omega, pitch, M, C, K_CG, StructuralParameters, AeroParameters, coupling, dynamic_inflow)
     x   = Y(1:2);
     dx  = Y(3:4);
     psi = Y(5);
