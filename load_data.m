@@ -26,6 +26,8 @@ function [StructuralParameters, OperationalParameters, AeroParameters] = load_da
 
     %% Damping
     StructuralParameters.damping_flapwise = 0.00477465;
+    %StructuralParameters.damping_flapwise = 0.0277465;
+
     StructuralParameters.damping_edgewise = StructuralParameters.damping_flapwise;
 
     %% Shape functions

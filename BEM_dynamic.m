@@ -101,22 +101,50 @@ for i = 1:NBS
 
     a_steady_out(i) = ax;
 
+    % if dynamic_inflow
+    %     Vwake = (1 - 2*ax) * v0;
+    %     tau_nw = taustar_nw * R / Vwake;
+    %     tau_fw = taustar_fw * R / Vwake;
+
+    %     a_nw = a_prev(i) * exp(-dt / tau_nw) + ax * (1 - exp(-dt / tau_nw));
+    %     a_fw = a_prev(i) * exp(-dt / tau_fw) + ax * (1 - exp(-dt / tau_fw));
+    %     ax_dyn =  0.6 * a_nw + 0.4 * a_fw;
+
+    %     ap_nw = a_prime_prev(i) * exp(-dt / tau_nw) + ax_prime * (1 - exp(-dt / tau_nw));
+    %     ap_fw = a_prime_prev(i) * exp(-dt / tau_fw) + ax_prime * (1 - exp(-dt / tau_fw));
+    %     ax_prime_dyn = 0.6 * ap_nw + 0.4 *ap_fw;
+    % else
+    %     ax_dyn = ax;
+    %     ax_prime_dyn = ax_prime;
+    % end
+
+    % ==============================================================
+% Pitt–Peters dynamic inflow  (per annulus, forward–Euler)
+% ==============================================================
+
     if dynamic_inflow
-        Vwake = (1 - 2 * ax) * v0;
-        tau_nw = taustar_nw * R / Vwake;
-        tau_fw = taustar_fw * R / Vwake;
+        % ---- constants for this annulus -----------------------------------
+        Aj   = 2*pi*r*dr;               % annulus area    [m²]
+        V0   = v0;                      % ambient axial velocity
+        Ctj  = 2*FN(i) / (rho*V0^2*Aj); % sectional thrust coefficient (FN just calculated)
 
-        a_nw = a_prev(i) * exp(-dt / tau_nw) + ax * (1 - exp(-dt / tau_nw));
-        a_fw = a_prev(i) * exp(-dt / tau_fw) + ax * (1 - exp(-dt / tau_fw));
-        ax_dyn = 0.6 * a_nw + 0.4 * a_fw;
+        % current induced velocity  (state) ---------------------------------
+        v_ind      = a_prev(i) * V0;        % convert previous a → velocity
 
-        ap_nw = a_prime_prev(i) * exp(-dt / tau_nw) + ax_prime * (1 - exp(-dt / tau_nw));
-        ap_fw = a_prime_prev(i) * exp(-dt / tau_fw) + ax_prime * (1 - exp(-dt / tau_fw));
-        ax_prime_dyn = 0.6 * ap_nw + 0.4 * ap_fw;
+        % Pitt–Peters ODE  :  dv/dt =   (3π / 8ρAj rj) * ( Ctj – 2ρAj v (V0+v) )
+        K1          = (3*pi) / (8*rho*Aj*r);     % pre-factor
+        dv_dt       = K1 * ( Ctj - 2*rho*Aj*v_ind*(V0 + v_ind) );
+
+        v_ind_next  = v_ind + dt * dv_dt;        % forward-Euler step
+
+        % store back in induction factors -----------------------------------
+        ax_dyn        =  v_ind_next / V0;
+        ax_prime_dyn  =  0;                      % Pitt-Peters is axisymmetric
     else
-        ax_dyn = ax;
+        ax_dyn       = ax;
         ax_prime_dyn = ax_prime;
     end
+
 
     a_next(i) = ax_dyn;
     a_prime_next(i) = ax_prime_dyn;
